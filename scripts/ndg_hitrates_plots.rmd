@@ -1,0 +1,32 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library("ggplot2")
+library("afex")
+library("emmeans")
+library("modelbased")
+#source("mybarplots.R")
+#source("mybarplots_ndg.R")
+source("mybarplots_ndg_to.R")
+source("mymakeitrain_ndg.R")
+library("dplyr")
+
+df = read.csv('memory_measures_data_longgraphs.csv',header = T)
+sub_title = ""
+temp_cf_man = c("#DC0000FF", "#4DBBD5FF", "#00A087FF") 
+x_break = c(.4, .6,.8)
+x_label = c("failure", "success","view")
+
+make_it_rain_plot(df,sub_title,temp_cf_man,x_break,x_label)
+  detach("package:PupillometryR")
+
+make_ndg_to_plot(df,sub_title)
+```
+
