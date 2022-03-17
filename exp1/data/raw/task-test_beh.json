@@ -1,0 +1,65 @@
+{
+    "task_test": {
+        "Description": "Participants completed an incidental recognition test. Participants were presented whole scenes from the study phase decomposed into objects and background scene components and lure scene components.  Note all backgrounds were neutral but were paired with negative or neutral objects."
+    },
+    "scene_type_resp_keys": {
+        "Description": "Participants memory response: 1 = old, 0 = new"
+    },
+    "scene_type_resp_rt": {
+        "Description": "Participants memory response reaction times"
+    },
+    "test_item_resp": {
+        "Description": "Participants memory response: 1 = old, 0 = new"
+    },
+    "test_type_rt": {
+        "Description": "Participants memory response reaction times"
+    },
+    "old_new_resp": {
+        "Description": "Participants memory responses recoded as old or new"
+    },
+    "item_acc": {
+        "Description": "Memory accuracy: 1 = hit (old-old, new-new), 0 miss (old-new, new-old)"
+    },
+    "phase_name": {
+        "Description": "Test phase: _prac or _crit. Crit trials are the real experimental trials"
+    },
+    "image": {
+        "Description": "Scene component (object or background) image name"
+    },
+    "sc_image": {
+        "Description": "Scene component (object or background) image name"
+    },
+    "sc_type": {
+        "Description": "Scene component type: object, background"
+    },
+    "sc_valence": {
+        "Description": "Scene component valence: negative, neutral"
+    },
+    "sc_code": {
+        "Description": "Scene component code that maps to unique whole scene id from study phase: 1-180, nan for foil images"
+    },
+    "old_new": {
+        "Description": "Scene component memory type: old (previously seen), new (lure item)"
+    },
+    "original_scene": {
+        "Description": "Original scene that the objects and backgrounds were decomposed from. NaN for lure items"
+    },
+    "scene_code": {
+        "Description": "Scene component code that maps to unique whole scene id from study phase: 1-180, nan for foil images"
+    },
+    "scene_valence": {
+        "Description": "Original scene valence: negative, neutral, na for new/lure items. "
+    },
+    "date": {
+        "Description": "Participants task completion date"
+    },
+    "cb": {
+        "Description": "Participants counterbalance: A, B, C"
+    },
+    "id": {
+        "Description": "Participant ID"
+    },
+    "test_resp_acc": {
+        "Description": "Numerically mark if trial is good (1) or bad (0) based on if participants test performance (item memory and using entire range of confidence scale), see prereg for more information "
+    }
+}

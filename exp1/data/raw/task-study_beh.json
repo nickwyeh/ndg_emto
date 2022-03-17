@@ -1,0 +1,68 @@
+{
+    "task": {
+        "Description": "In this task participants viewed negative and neutral scenes and were instructed to either decrease their emotions or passively view the scenes. Note decrease instructions were only paired with negative scenes"
+    },
+    "id": {
+        "Description": "Participant id code"
+    },
+    "arousal_resp_keys": {
+        "Description": "Arousal ratings from 1 = very calm to 6 = very intense"
+    },
+    "arousal_resp_rt": {
+        "Description": "Arousal ratings reaction times"
+    },
+    "study_success_resp_key": {
+        "Description": "Reappraisal success rates for decrease instructions (1= successful, 0 = unsuccessful, n/a = view trial"
+    },
+    "study_success_rt": {
+        "Description": "Reappraisal success rates reaction times with -99 for view trials"
+    },
+    "study_arousal_rating": {
+        "Description": "Arousal ratings from 1 = very calm to 6 = very intense"
+    },
+    "study_arousal_rt": {
+        "Description": "Arousal ratings reaction times"
+    },
+    "test_file": {
+        "Description": "Test file counterbalance number: A, B, or C"
+    },
+    "phase_name": {
+        "Description": "Block phase coded as valence (negative, neutral), instruction (decrease1-6, view1-6), and listnumber (1-2; e.g., neutral_view1_study1). "
+    },
+    "phase_progress": {
+        "Description": "Indicates practice or real phase"
+    },
+    "image": {
+        "Description": "Image presented. Note whole images were created by placing objects on backgrounds"
+    },
+    "instruction": {
+        "Description": "Study instructions: Decrease or View"
+    },
+    "valence": {
+        "Description": "Valence of image/scene: negativie, neutral"
+    },
+    "sc_code": {
+        "Description": "Unique id scene component code: 1-180"
+    },
+    "success_resp_keys": {
+        "Description": "Reappraisal success rates for decrease instructions (1= successful, 0 = unsuccessful, n/a = view trial"
+    },
+    "success_resp_rt": {
+        "Description": "Reappraisal success rates reaction times with -99 for view trials"
+    },
+    "original_scene": {
+        "Description": "Image presented. Note whole images were created by placing objects on backgrounds"
+    },
+    "set": {
+        "Description": "Image set list: 1-2, NAN for view trials"
+    },
+    "cb": {
+        "Description": "Counterbalance for instruction block presentation: A, B, C"
+    },
+    "study_R_trial": {
+        "Description": "Decrease/Reappraisal instructions are coded as 1 and view trials as 0"
+    },
+    "study_success_rating": {
+        "Description": "Reappraisal success ratings recoded as success, failure, and na for view trials"
+    }
+}
