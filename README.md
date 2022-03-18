@@ -5,7 +5,7 @@
 * ...
 
 ##### Task overview:
-* The....
+* The....<p align = "center"> <img src="https://github.com/nickwyeh/ndg_emto/blob/main/figures/task_figure.png" height = "200" width="400"> </p> 
 
 
  ##### Directory structure overview:
