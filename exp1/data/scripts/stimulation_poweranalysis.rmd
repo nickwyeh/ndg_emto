@@ -1,0 +1,32 @@
+---
+title: "Power analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Simulation Power analysis}
+
+# Power analysis for a 3 (condition: success, failure, view) x 2 (component: object, scene) ANOVA on memory scores from pilot data
+
+require('Superpower')
+
+# specify ANOVA design. w = within factor
+design = '2w*3w' 
+design_result <- ANOVA_design(design='2w*3w',
+                              n=80,
+                              mu=c(0.466697213,0.532819677,0.443137255,0.169457561,0.157878177,0.102941176),
+                              sd=c(0.186551824,0.214159382,0.208920741,0.182762931,0.125009771,0.121877357),
+                              r=c(0.870627452,0.913226136,0.715084925,0.740467589,0.73489178,0.835361217,0.542354019,0.558119583,0.544660008,0.721413667,0.651188777,0.72289495,0.619072297,0.789851165,0.716670691),
+                              labelnames=c('component','object','scene','condition','success','failure','view'),
+                              plot=TRUE)
+
+power_analysis_sim <- ANOVA_power(design_result,
+                                  alpha=0.05,
+                                  nsims=1000,
+                                  seed=1234)
+plot_power(design_result)
+```
+
