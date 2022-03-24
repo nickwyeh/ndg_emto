@@ -2,7 +2,7 @@
 ##### Open science framework: https://osf.io/8jh7r/.
 
 ##### What did i do?
-* This project was aimed at investigating potential memory mechanisms underlying memory benefits for emotion regulation success and failure.
+* This project was aimed at investigating potential mechanisms underlying emotional memory benefits that have been found for emotion regulation success and failure.
 ##### Main findings:
 * Ongoing.
 
