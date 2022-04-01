@@ -39,10 +39,23 @@ else:
 # Set up paths
 data_dir = server_dir / project_id / experiment_id / 'data'
 source_dir = data_dir / 'sourcedata'
-raw_dir = data_dir / 'raw'
-analyses_dir = data_dir / 'analyses' 
-data_files_dir = analyses_dir / 'data_files'
+raw_dir = data_dir / 'raw_py'
+analyses_dir = data_dir / 'analyses_py' 
+data_files_dir = analyses_dir / 'data_files_py'
 
+#define functions
+def categorise(row):
+    if row['study_success_resp_key'] == 1:
+        return 'success'
+    elif row['study_success_resp_key'] == 0:
+        return 'failure'
+    else:
+        return 'na' # maybe change to view?
+def score(memory):
+    if memory['old_new'] == 'old' and memory['test_item_resp'] ==1 or memory['old_new'] == 'new' and memory['test_item_resp'] == 0:
+        return 1
+    else:
+        return 0
 # set up participant log 
 par_col_names = ['OG_id'  ,'id' ,'cb' ,'list' ,'success' ,'failure']
 par_log = pd.DataFrame(columns = par_col_names)
@@ -110,29 +123,22 @@ for idx, sub in enumerate(sub_list):
         print(f" test data for {OG_id} has correct rows")
         
     # add reappraisal success rating
-    def categorise(row):
-        if row['study_success_resp_key'] == 1:
-            return 'success'
-        elif row['study_success_resp_key'] == 0:
-            return 'failure'
-        else:
-            return 'na' # maybe change to view?
     study_data['study_success_rating'] = study_data.apply(lambda row: categorise(row), axis=1)
     
     # check number of reappraisal trials
     n_r_trials = study_data['instruction'].value_counts()[1]
-    n_sf_trials = study_data['study_success_rating'].value_counts()['success'] + study_data['study_success_rating'].value_counts()['failure']
+    
+    if study_data['study_success_rating'].value_counts()['success'] == 60:
+        n_sf_trials = study_data['study_success_rating'].value_counts()['success']
+    else:
+        n_sf_trials = study_data['study_success_rating'].value_counts()['success'] + study_data['study_success_rating'].value_counts()['failure']
+        
     if n_r_trials != 60 | n_sf_trials != 60:
         print(f"study data for {OG_id} has wrong number of reappraisal trials")
     else:
         print(f"study data for {OG_id} has correct (60) number of reappraisal trials")
 
     # create test memory acc variable
-    def score(memory):
-        if memory['old_new'] == 'old' and memory['test_item_resp'] ==1 or memory['old_new'] == 'new' and memory['test_item_resp'] == 0:
-            return 1
-        else:
-            return 0
     test_data['test_item_resp_acc'] = test_data.apply(lambda memory: score(memory), axis=1)
     
     # compare newly created acc variable with psychopy original acc variable 
@@ -149,7 +155,7 @@ for idx, sub in enumerate(sub_list):
     phase_name = study_data['phase_name'].head(1).item()
     if phase_name.startswith("neg_decrease1_study"):
         study_cb = 'B'
-    elif phase_name.startswit['neg_view1_study']:
+    elif phase_name.startswith('neg_view1_study'):
         study_cb = 'A'
     else:
         study_cb = 'C'
@@ -159,7 +165,7 @@ for idx, sub in enumerate(sub_list):
     
     # Combine study and test data
 
-    study_cols = ["sc_code","study_arousal_rating","study_arousal_rt","study_success_rating","study_success_rt","test_file","instruction"]
+    study_cols = ["sc_code","study_arousal_rating","study_arousal_rt","study_success_rating","study_success_rt","test_file","instruction","success_resp_keys"]
     temp_study = study_data.loc[:, study_data.columns.isin(study_cols)]
     temp_study.sort_values(['sc_code'], ascending = [True], inplace =True)
     test_data.sort_values(['old_new', 'sc_code'], ascending=[False, True],inplace= True)
@@ -167,10 +173,17 @@ for idx, sub in enumerate(sub_list):
     # likely could have merged them based on left with a key see below
     #temp_study2 = temp_study.sort_values(['sc_code'], ascending = [False]) mess with sorting to check
     #temp_test = test_data.sort_values(['old_new', 'sc_code'], ascending=[True, True]) mess with sorting to check
-    #combo2 = pd.merge(temp_test,temp_study2,how= "left" ,on = [ 'sc_code'])    
+    #combo2 = pd.merge(temp_test,temp_study2,how= "left" ,on = [ 'sc_code']) 
+    
     # # Make directory
-    sub_raw = raw_dir / id
+    sub_raw = raw_dir / f'sub-{id}'
     sub_raw.mkdir(parents=True, exist_ok=True)
+    
+    
+    data_files_dir.mkdir(parents=True, exist_ok=True)
+    
+    sub_data_files_dir = data_files_dir / f'sub-{id}'
+    sub_data_files_dir.mkdir(parents=True, exist_ok=True)
 
      # Write study, test, and study-test data files
     data_study_file = sub_raw / f'sub-{id}_task-study_beh.tsv'
@@ -179,11 +192,18 @@ for idx, sub in enumerate(sub_list):
     data_test_file = sub_raw / f'sub-{id}_task-test_beh.tsv'
     test_data.to_csv(data_test_file, index=False)
     
-    data_combo_data_file = sub_raw / f'sub-{id}_task-studytest_beh.tsv'
-    combo_data.to_csv(data_study_file, index=False)
+    data_combo_data_file = sub_data_files_dir / f'sub-{id}_task-studytest_beh.tsv'
+    combo_data.to_csv(data_combo_data_file, index=False)
     
     # Update participant log
-    temp_df = pd.DataFrame([[sub,id,study_cb,list,study_data['study_success_rating'].value_counts()['success'], study_data['study_success_rating'].value_counts()['failure']]], columns=par_log.columns)
-    par_log = par_log.append(temp_df, ignore_index=True)
+    if study_data['study_success_rating'].value_counts()['success'] == 60:
+        temp_failure = 0
+        temp_df = pd.DataFrame([[sub,id,study_cb,list,study_data['study_success_rating'].value_counts()['success'], temp_failure]], columns=par_log.columns)
+        par_log = par_log.append(temp_df, ignore_index=True)
+    else:
+        temp_df = pd.DataFrame([[sub,id,study_cb,list,study_data['study_success_rating'].value_counts()['success'], study_data['study_success_rating'].value_counts()['failure']]], columns=par_log.columns)
+        par_log = par_log.append(temp_df, ignore_index=True)
     
     # could add summary report for all your checks...trial counts, reappraisal counts, item acc check, etc.. Could add reaction time check
+    parlog_file = raw_dir / 'participants.tsv'
+    par_log.to_csv(parlog_file, index=False)
