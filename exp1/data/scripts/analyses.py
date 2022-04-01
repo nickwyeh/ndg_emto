@@ -51,25 +51,32 @@ analyses_dir = data_dir / 'analyses_py'
 data_files_dir = analyses_dir / 'data_files_py'
 
 # set up data files
-#hit_col_names                 = ['participant' ,'study_cb' ,'list', 'study_condition', 'proportion']
-#hit_graphs_col_names          = ['participant', 'study_cb', 'list' ,'study_condition', 'sc' ,'valence' ,'proportion']
 
-#tradeoff_datagraphs_col_names = ['participant' ,'study_cb' ,'list' ,'study_instruction_condition', 'intact', 'OB' ,'BG', 'F']
+memory_melt_col_names          = ['id', 'cb', 'list', 'study_condition', 'scene_component', 'valence', 'hit_rate' ]
+cr_melt_col_names              = ['id', 'cb', 'list', 'study_condition', 'scene_component', 'valence', 'corrected_hr' ]
+
+memory_col_names               =  ['participant', 'study_cb' ,'list' , "dec_ob_neg", "dec_bg_neg", "view_ob_neg", "view_bg_neg", "view_ob_neutral", "view_bg_neutral", "success_ob_neg", "success_bg_neg", "failure_ob_neg", "failure_bg_neg"]
 #reappraisal_success_col_names = ['participant', 'success_object_hit', 'success_background_hit' ,'success_total', 'failure_object_hit', 'failure_background_hit', 'failure_total']
 #arousal_col_names             = ['participant', 'study_cb' ,'list' ,'study_condition' ,'arousal_ratings']
-lme_col_names                 = ['id', 'list', 'cb' ,'item_acc' ,'sc_type' ,'sc_valence', 'scene_valence', 'old_new', 'instruction', 'study_success_rating', 'study_arousal_rating', 'test_item_resp', 'original_scene', 'sc_image' ,'sc_code']
-hit_cols                      = ['participant', 'study_cb' ,'list' , "dec_ob_neg", "dec_bg_neg", "view_ob_neg", "view_bg_neg", "view_ob_neutral", "view_bg_neutral", "success_ob_neg", "success_bg_neg", "failure_ob_neg", "failure_bg_neg", "fa_ob_neg", "fa_ob_neutral", "fa_bg_neutral"]
-memory_col_names              = ['participant', 'study_cb' ,'list' , "dec_ob_neg", "dec_bg_neg", "view_ob_neg", "view_bg_neg", "view_ob_neutral", "view_bg_neutral", "success_ob_neg", "success_bg_neg", "failure_ob_neg", "failure_bg_neg"]
+lme_col_names                  = ['id', 'list', 'cb' ,'item_acc' ,'sc_type' ,'sc_valence', 'scene_valence', 'old_new', 'instruction', 'study_success_rating', 'study_arousal_rating', 'test_item_resp', 'original_scene', 'sc_image' ,'sc_code']
+hit_cols                       = ['participant', 'study_cb' ,'list' , "dec_ob_neg", "dec_bg_neg", "view_ob_neg", "view_bg_neg", "view_ob_neutral", "view_bg_neutral", "success_ob_neg", "success_bg_neg", "failure_ob_neg", "failure_bg_neg", "fa_ob_neg", "fa_ob_neutral", "fa_bg_neutral"]
+tradeoff_col_names  = ['participant', 'study_cb' ,'list' , "dec_neg_intact", "view_neg_intact", "view_neutral_intact", "success_neg_intact", "failure_neg_intact", "dec_neg_emto", "view_neg_emto" ,"view_neutral_emto",  "success_neg_emto" ,  "failure_neg_emto" , "dec_neg_reverse" , 
+                                 "view_neg_reverse", "view_neutral_reverse", "success_neg_reverse", "failure_neg_reverse", "dec_neg_forget", "view_neg_forget", "view_neutral_forget", "success_neg_forget", "failure_neg_forget" ]
+combined_alt_to                = ['participant', 'study_cb', 'list', 'study_condition', 'intact', 'emto', 'reverse', 'forget']
 
 #hit_fa_data                   = pd.DataFrame(columns = hit_col_names)
 #hit_fa_datagraphs             = pd.DataFrame(columns = hit_graphs_col_names)
 cr_list                        = pd.DataFrame(columns = memory_col_names)
-
+to_list                        = pd.DataFrame(columns = tradeoff_col_names)
 #tradeoff_datagraphs           = pd.DataFrame(columns = memory_acc_datagraphs)
 #reappraisal_strategy_success  = pd.DataFrame(columns = reappraisal_success_col_names)
 #arousal_data                  = pd.DataFrame(columns = arousal_col_names)
-lme_test_data                 = pd.DataFrame(columns = lme_col_names) 
-hit_list                      = pd.DataFrame(columns = hit_cols) 
+lme_test_data                  = pd.DataFrame(columns = lme_col_names) 
+hit_list                       = pd.DataFrame(columns = hit_cols) 
+memory_melt                    = pd.DataFrame(columns = memory_melt_col_names) 
+cr_melt                        = pd.DataFrame(columns = cr_melt_col_names) 
+combined_alt                   = pd.DataFrame(columns = combined_alt_to) 
+
 # Get study Subject List
 sub_list = os.listdir(data_files_dir)
 
@@ -251,13 +258,13 @@ for sub in sub_list:
     success_OB = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['study_success_rating'] == 'success'), 'Rearrange_OB'].sum()/ alt_data['study_success_rating'].value_counts()[1]  
     view_negative_OB =  alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['instruction'] == 'view'), 'Rearrange_OB'].sum()/ 60
     view_neutral_OB = alt_data.loc[(alt_data['scene_valence'] == 'neutral') & (alt_data['instruction'] == 'view'), 'Rearrange_OB'].sum()/ 60
-      
+    
      # INTACT measure
     decrease_negative_OBBG = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['instruction'] == 'decrease'), 'Intact'].sum() / 60 
     success_OBBG = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['study_success_rating'] == 'success'), 'Intact'].sum()/ alt_data['study_success_rating'].value_counts()[1]
     view_negative_OBBG =  alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['instruction'] == 'view'), 'Intact'].sum() / 60
     view_neutral_OBBG = alt_data.loc[(alt_data['scene_valence'] == 'neutral') & (alt_data['instruction'] == 'view'), 'Intact'].sum() / 60
-
+  
     #alt_counts_BG = alt_data.groupby(['scene_valence','study_success_rating'])['Rearrange_BG'].value_counts()
     
     decrease_negative_BG = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['instruction'] == 'decrease'), 'Rearrange_BG'].sum() / 60
@@ -284,8 +291,8 @@ for sub in sub_list:
     # Step 5 update dataframes with new measures
     
     # wide 
-     
-    hit_list_temp = {
+    
+    hit_list_temp = [{
     'participant'                 : sub,
     'study_cb'                    : study_cb,
     'list'                        : studylist,
@@ -302,9 +309,11 @@ for sub in sub_list:
     "fa_ob_neg"                   : FA_objects_negative,
     "fa_ob_neutral"               : FA_objects_neutral,
     "fa_bg_neutral"               : FA_backgrounds_neutral
-    }
+    }]
+    
+    hit_list_temp = pd.DataFrame(hit_list_temp)
         
-    cr_list_temp = {
+    cr_list_temp = [{
     'participant'                 : sub,
     'study_cb'                    : study_cb,
     'list'                        : studylist,
@@ -318,40 +327,89 @@ for sub in sub_list:
     "success_bg_neg"              : CR_success_decrease_background_negative,
     "failure_ob_neg"              : CR_failure_decrease_object_negative,
     "failure_bg_neg"              : CR_failure_decrease_background_negative 
-    }
+    }]      
+    cr_list_temp = pd.DataFrame(cr_list_temp)
     
+    tradeoff_temp = [{
+    'participant'                 : sub,
+    'study_cb'                    : study_cb,
+    'list'                        : studylist,
+    "dec_neg_intact"              : decrease_negative_OBBG,  
+    "view_neg_intact"             : view_negative_OBBG,
+    "view_neutral_intact"         : view_neutral_OBBG,  
+    "success_neg_intact"          : success_OBBG,  
+    "failure_neg_intact"          : failure_OBBG,
+    "dec_neg_emto"                : decrease_negative_OB,  
+    "view_neg_emto"               : view_negative_OB,
+    "view_neutral_emto"           : view_neutral_OB,  
+    "success_neg_emto"            : success_OB,  
+    "failure_neg_emto"            : failure_OB,
+    "dec_neg_reverse"             : decrease_negative_BG,  
+    "view_neg_reverse"            : view_negative_BG,
+    "view_neutral_reverse"        : view_neutral_BG,  
+    "success_neg_reverse"         : success_BG,  
+    "failure_neg_reverse"         : failure_BG,
+    "dec_neg_forget"              : decrease_negative_F,  
+    "view_neg_forget"             : view_negative_F,
+    "view_neutral_forget"         : view_neutral_F,  
+    "success_neg_forget"          : success_F,  
+    "failure_neg_forget"          : failure_F
+    }]
+    tradeoff_temp = pd.DataFrame(tradeoff_temp)
     # long for graphs
     
     # hit rates
+    hit_list           = pd.concat([hit_list, hit_list_temp])
     
-    hit_list = hit_list.append(hit_list_temp, ignore_index=True) 
-    hit_list_df = hit_list
-    
-    hit_list_df.columns = [['id','cb','list','dec','dec','view','view','view','view','success','success','failure','failure','fa','fa','fa'],
+    hit_result         = hit_list_temp
+    hit_result.columns = [['id','cb','list','dec','dec','view','view','view','view','success','success','failure','failure','fa','fa','fa'],
                        ['id','cb','list','object','background','object','background','object','background','object','background','object','background','object','object','background'],
                        ['id','cb','list','neg','neg','neg','neg','neutral','neutral','neg','neg','neg','neg','neg','neutral','neutral']]
     
-    hit_long_melted_df                    = hit_list_df.melt(id_vars = ['id','cb','list'], col_level = 0, var_name = 'study_condition')
-    hit_long_melted_df['scene_component'] = hit_list_df.melt(id_vars = ['id','cb','list'], col_level = 1)['variable']
-    hit_long_melted_df['valence']         = hit_list_df.melt(id_vars = ['id','cb','list'], col_level = 2)['variable']
+    hit_long_melted_df                    = hit_result.melt(id_vars = ['id','cb','list'], col_level = 0, value_name = 'hit_rate', var_name = 'study_condition')
+    hit_long_melted_df['scene_component'] = hit_result.melt(id_vars = ['id','cb','list'], col_level = 1)['variable']
+    hit_long_melted_df['valence']         = hit_result.melt(id_vars = ['id','cb','list'], col_level = 2)['variable']
     hit_long_melted_df.sort_values('id', inplace=True)
+    #combine dataframes
+    memory_melt = pd.concat([memory_melt, hit_long_melted_df])
     
     # corrected hit rates
+    cr_list            = pd.concat([cr_list, cr_list_temp])
     
-    cr_list = cr_list.append(cr_list_temp, ignore_index=True) 
-    cr_list_df = cr_list
-    
-    cr_list_df.columns = [['id','cb','list','dec','dec','view','view','view','view','success','success','failure','failure'],
+    cr_result          = cr_list_temp
+    cr_result.columns = [['id','cb','list','dec','dec','view','view','view','view','success','success','failure','failure'],
                        ['id','cb','list','object','background','object','background','object','background','object','background','object','background'],
                        ['id','cb','list','neg','neg','neg','neg','neutral','neutral','neg','neg','neg','neg']]
     
-    cr_list_melted_df                    = cr_list_df.melt(id_vars = ['id','cb','list'], col_level = 0, var_name = 'study_condition')
-    cr_list_melted_df['scene_component'] = cr_list_df.melt(id_vars = ['id','cb','list'], col_level = 1)['variable']
-    cr_list_melted_df['valence']         = cr_list_df.melt(id_vars = ['id','cb','list'], col_level = 2)['variable']
+    cr_list_melted_df                    = cr_result.melt(id_vars = ['id','cb','list'], col_level = 0, value_name = 'corrected_hr', var_name = 'study_condition')
+    cr_list_melted_df['scene_component'] = cr_result.melt(id_vars = ['id','cb','list'], col_level = 1)['variable']
+    cr_list_melted_df['valence']         = cr_result.melt(id_vars = ['id','cb','list'], col_level = 2)['variable']
     cr_list_melted_df.sort_values('id', inplace=True)
+    #combine dataframes 
+    cr_melt = pd.concat([cr_melt, cr_list_melted_df])
     
+    # Trade-off
+    to_list     = to_list.append(tradeoff_temp, ignore_index=True) 
+    to_list_df  = to_list
+
+    intact  = pd.melt(to_list_df, id_vars = ['participant','study_cb','list'], value_vars = ["dec_neg_intact", "view_neg_intact", "view_neutral_intact", "success_neg_intact", "failure_neg_intact"], var_name = "study_condition", value_name = "intact")
+    emto    = pd.melt(to_list_df, id_vars = ['participant','study_cb','list'], value_vars = ["dec_neg_emto", "view_neg_emto", "view_neutral_emto", "success_neg_emto", "failure_neg_emto"], var_name = "study_condition", value_name = "emto")
+    reverse = pd.melt(to_list_df, id_vars = ['participant','study_cb','list'], value_vars = ["dec_neg_reverse", "view_neg_reverse", "view_neutral_reverse", "success_neg_reverse", "failure_neg_reverse"], var_name = "study_condition", value_name = "reverse")
+    forget  = pd.melt(to_list_df, id_vars = ['participant','study_cb','list'], value_vars = ["dec_neg_forget", "view_neg_forget", "view_neutral_forget", "success_neg_forget", "failure_neg_forget"], var_name = "study_condition", value_name = "forget")
+    
+    intact['study_condition']  = intact['study_condition'].str.replace(r'_intact', '')
+    emto['study_condition']    = emto['study_condition'].str.replace(r'_emto', '')
+    reverse['study_condition'] = reverse['study_condition'].str.replace(r'_reverse', '')
+    forget['study_condition']  = forget['study_condition'].str.replace(r'_forget', '')
+    
+    results_ie  = pd.merge(intact, emto, on = ["study_condition",'participant','study_cb','list'])
+    results_ier = pd.merge(results_ie, reverse, on = ["study_condition",'participant','study_cb','list'])
+    results_to  = pd.merge(results_ier, forget, on = ["study_condition",'participant','study_cb','list']) 
+    
+    combined_alt = pd.concat([combined_alt,results_to])
+    combined_alt.sort_values('participant', inplace=True)
     # Step 6 save csv files
-    
+ 
 lme_data_file = analyses_dir / 'lme_data.csv'
 lme_test_data.to_csv(lme_data_file, index=False)
 
@@ -366,3 +424,9 @@ cr_list.to_csv(cr_list_data_file, index=False)
 
 cr_list_melt_data_file = analyses_dir / 'memory_measures_data_longgraphs.csv'
 cr_list_melted_df.to_csv(cr_list_melt_data_file, index=False)
+
+to_list_data_file = analyses_dir / 'tradeoff_data.csv'
+to_list.to_csv(to_list_data_file, index=False)
+
+combined_alt_data_file = analyses_dir / 'tradeoff_data_longgraphs.csv'
+combined_alt.to_csv(combined_alt_data_file, index=False)
