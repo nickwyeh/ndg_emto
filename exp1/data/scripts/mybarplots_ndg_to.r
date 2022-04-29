@@ -76,7 +76,7 @@ make_ndg_to_plot <- function(df_to_clean,sub_title) {
                   size=.3, width=.1,color = "black", position=position_dodge(.75))+
     geom_point(data = df3,aes(x = x_coord, y = outcome, color = ObBg),
                position = position_jitter(width = .1, height = 0), 
-               size = 5, shape = 20, alpha = .7)+
+               size = 4, shape = 20, alpha = .6)+
     scale_color_manual(values = c( "background" = "grey", "objects" = "slategray"),
                        labels = c( "background", "object")
     )  +

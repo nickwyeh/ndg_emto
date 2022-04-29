@@ -1,0 +1,631 @@
+---
+title: "ndg anova"
+author: "nick"
+date: "3/25/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+rm(list=ls()) # clear the workspace of all data objects
+ls() # list number of data objects in the workspace
+library(dplyr)
+library(afex)
+library(emmeans)
+library(effectsize)
+library(patchwork)
+source("rain_ob_bg.R")
+```
+
+this_theme <- theme(    
+    panel.background    = element_blank() ,            #   control the major gridlines 
+    panel.grid.major.y  = element_line() ,             #   suppress the vertical grid lines
+    panel.grid.major.x  = element_blank() ,            #   suppress the minor grid lines
+    panel.grid.minor    = element_blank() ,            #   add axes
+    axis.text           = element_text(size=20, family="Times", colour='black'),   #   tick labels' size, font & color. 
+    axis.line.x         = element_line( size=.8),   #   adjust the axis ticks
+    axis.line.y         = element_line( size=.8),
+    axis.ticks          = element_line( size=.8, colour='black'),   #   axis colors and thickness 
+    axis.title.y        = element_text( angle=90, vjust= 1.5, hjust=.47,    
+                                        size=20, family="Times"),  
+    axis.title.x        = element_text(vjust=-.5, hjust = .505,                    
+                                       size=20, family="Times"),                   
+    plot.title = element_text (size=20, family="Times", colour='black', face = 'bold'),
+    legend.text = element_text(size=20, family="Times"),
+    legend.title = element_text(size=20, family="Times", face = 'bold'),
+    plot.subtitle = element_text(size=20,  face="bold", color="black")
+  )
+```{r}
+setwd("C:/Users/nyeh/Desktop/fall_2021/NDG/exp1/data/analyses/")
+ndg_data_long    <- read.csv('memory_measures_data_longgraphs.csv',header = T)
+ndg_arousal_long <- read.csv('arousal_data_long.csv',header = T)
+ndg_success      <- read.csv('reappraisal_strategy_success.csv',header = T)
+df_ndg           <- read.csv('lme_data.csv',header = T)
+df_ndg180        <- read.csv('lme180_data.csv',header = T)
+
+nd007_alt_data   <- read.csv('tradeoff_datagraphs.csv',header = T)
+# "sub-005","sub-015","sub-018",
+bad_id = c("sub-031","sub-024","sub-038")
+```
+
+```{r}
+#Factor variables
+vars_factor                   <- c("participant","study_instruction_condition","valence","scene_component")
+vars_a_factor                 <- c("participant","study_condition")
+
+ndg_data_long[vars_factor]    <- data.frame(lapply(ndg_data_long[vars_factor], factor))
+ndg_arousal_long[vars_factor] <- data.frame(lapply(ndg_arousal_long[vars_a_factor], factor))
+
+
+ndg_success = ndg_success %>%
+  filter(!participant %in% bad_id)%>% 
+  select(success_total,participant)%>% 
+  droplevels()
+
+
+# clean up dataframes and merge 
+ndg_data_long    <- inner_join(ndg_data_long,ndg_success, by = 'participant')
+nd007_alt_data   <- inner_join(nd007_alt_data,ndg_success, by = 'participant')
+ndg_arousal_long <- arrange(ndg_arousal_long, participant, study_condition)
+nd007_alt_data   <- arrange(nd007_alt_data, participant ,study_instruction_condition )
+
+temp_arousal     <- ndg_arousal_long %>%
+  select(participant, study_condition, arousal_ratings, arousal_intact, arousal_ob, arousal_bg, arousal_f)%>%
+  rename(study_instruction_condition = study_condition)
+
+nd007_alt_data   <- inner_join(nd007_alt_data,temp_arousal, by = c('participant',"study_instruction_condition"))
+```
+# Hypothesis (replication) #1: 2 (valence: negative, neutral) X 2 (scene component: object, background) repeated measures ANOVA for the view trials. Follow up t-tests carried out for significant main effects or interactions.
+```{r}
+nd7_stat_h1 <- ndg_data_long%>%
+  filter(study_instruction_condition == "view")%>% 
+  droplevels()
+#run model
+nd7_aov_h1 <- aov_ez('participant','corrected_recognition',nd7_stat_h1,
+                     within=c("valence","scene_component"),
+                     anova_table = list(es='pes'))
+knitr::kable(nice(nd7_aov_h1))
+# Follow up t-tests
+nd7_interaction_h1 <- emmeans(nd7_aov_h1, "scene_component", by = c("valence"))
+
+emto_pairs         <- summary(pairs(nd7_interaction_h1, adjust = "none"))
+emto_pairs_es      <- t_to_d(emto_pairs$t.ratio, emto_pairs$df, ci = .95)
+```
+# Hypothesis # 2:  2 (study instruction: reappraise, view) x 2 (scene component: object, background) repeated measures ANOVA for decrease trials. Follow up t-tests will be carried out for significant main effects or interactions.
+```{r}
+study_remove_vars <- c("success","failure")
+
+nd7_stat_h2 <- ndg_data_long%>%
+  filter(valence == "negative",!study_instruction_condition %in% study_remove_vars,!participant %in% bad_id)%>% 
+  droplevels()
+#run model
+nd7_aov_h2 <- aov_ez('participant','corrected_recognition',nd7_stat_h2,
+                     within=c("study_instruction_condition","scene_component"),
+                     anova_table = list(es='pes'))
+knitr::kable(nice(nd7_aov_h2))
+# Follow up t-tests
+nd7_si_h2             <- emmeans(nd7_aov_h2, "study_instruction_condition")
+emto_pairs_h2         <- summary(pairs(nd7_si_h2, adjust = "none"))
+emto_pairs_es_h2      <- t_to_d(emto_pairs_h2$t.ratio, emto_pairs_h2$df, ci = .95)
+
+nd7_interaction_h2    <- emmeans(nd7_aov_h2, "study_instruction_condition", by = c("scene_component"))
+
+#visualize
+# set up dataframes
+cr_df = modelbased::estimate_means(nd7_aov_h2)
+cr_df$x_location <- c(.4,.6) + .1
+cr_df_objects = cr_df%>%
+  filter(scene_component == "objects")
+
+df2_x_axis = nd7_stat_h2 %>%
+  mutate(x_location = 
+           case_when(study_instruction_condition == "decrease" ~.4,
+                     study_instruction_condition == "view" ~.6)) %>%
+  filter(scene_component == "objects")
+
+# define plot featuers
+sc_type <- "Objects"
+memory_measure <- "Corrected recognition" 
+plot_colors <- c("#3C5488FF", "#00A087FF") # colors for graph
+x_break     <- c(.4,.6)
+x_label     <- c("decrease","view")
+# Make the plots
+rain_objects_reg <- make_cloud_plot(df2_x_axis, cr_df_objects,'corrected_recognition', memory_measure, plot_colors, x_break, x_label)
+
+#backgrounds
+cr_df_background = cr_df%>%
+  filter(scene_component == "background")
+cr_df_background
+
+df2_x_axis_bg = nd7_stat_h2 %>%
+  mutate(x_location = 
+           case_when(study_instruction_condition == "decrease" ~.4,
+                     study_instruction_condition == "view" ~.6)) %>%
+  filter(scene_component == "background")
+
+# Make the plots
+memory_measure = "Corrected recognition" #
+sc_type = "Backgrounds"
+#study_instruction_condition
+rain_bg_reg <- make_cloud_plot(df2_x_axis_bg, cr_df_background, 'corrected_recognition', memory_measure, plot_colors, x_break, x_label)
+
+rain_objects_reg + rain_bg_reg
+```
+#Hypothesis #3:  a 3 (reappraisal success: success, failure, view) x 2 (scene component: object, background) repeated measures ANOVA. Follow up t-tests will be carried out for significant main effects or interactions.
+```{r}
+study_remove_vars <- c("decrease","view_neutral")
+nd7_stat_h3 <- ndg_data_long%>%
+  filter(valence == "negative", !study_instruction_condition %in% study_remove_vars,!participant %in% bad_id)%>% 
+  droplevels()
+#run model
+nd7_aov_h3 <- aov_ez('participant','corrected_recognition',nd7_stat_h3,
+                     within=c("study_instruction_condition","scene_component"),
+                     anova_table = list(es='pes'))
+knitr::kable(nice(nd7_aov_h3))
+# Follow up t-tests
+nd7_si_h3             <- emmeans(nd7_aov_h3, "study_instruction_condition")
+emto_pairs_h3         <- summary(pairs(nd7_si_h3, adjust = "none"))
+emto_pairs_es_h3      <- t_to_d(emto_pairs_h3$t.ratio, emto_pairs_h3$df, ci = .95)
+
+nd7_interaction_h3    <- emmeans(nd7_aov_h3, "study_instruction_condition", by = c("scene_component"))
+pairs_int             <- summary(pairs(nd7_interaction_h3, adjust = "none"))
+emto_pairs_es_int     <- t_to_d(pairs_int$t.ratio, pairs_int$df, ci = .95)
+# visualize 
+# set up dataframes
+cr_df = modelbased::estimate_means(nd7_aov_h3)
+
+cr_df$x_location <- c(.4,.6,.8) + .1
+cr_df_objects = cr_df%>%
+  filter(scene_component == "objects")
+
+df2_x_axis = nd7_stat_h3 %>%
+  mutate(x_location = 
+           case_when(study_instruction_condition == "success" ~.6,
+                     study_instruction_condition == "failure" ~.4,
+                     study_instruction_condition == "view" ~.8)) %>%
+  filter(scene_component == "objects")
+
+# define plot featuers
+sc_type <- "Objects"
+memory_measure <- "Corrected recognition" 
+plot_colors <- c("#DC0000FF", "#4DBBD5FF", "#00A087FF")
+x_break     <- c(.4,.6,.8)
+x_label     <- c("failure","success","view")
+# Make the plots
+rain_objects <- make_cloud_plot(df2_x_axis, cr_df_objects,'corrected_recognition', memory_measure, plot_colors, x_break, x_label)
+
+#backgrounds
+cr_df_background = cr_df%>%
+  filter(scene_component == "background")
+
+df2_x_axis_bg = nd7_stat_h3 %>%
+  mutate(x_location = 
+           case_when(study_instruction_condition == "success" ~.6,
+                     study_instruction_condition == "failure" ~.4,
+                     study_instruction_condition == "view" ~.8)) %>%
+  filter(scene_component == "background")
+# Make the plots
+memory_measure = "Corrected recognition" 
+sc_type = "Backgrounds"
+#study_instruction_condition
+rain_bg <- make_cloud_plot(df2_x_axis_bg, cr_df_background, 'corrected_recognition', memory_measure, plot_colors, x_break, x_label)
+
+rain_objects + rain_bg
+```
+# Hypothesis #4: Paired t-test (study instruction: reappraisal vs view) for negative scenes. 
+```{r}
+arousal_vars_remove <- c("success","failure","view_neutral")
+
+nd7_stat_h4 <- ndg_arousal_long %>%
+  filter(!study_condition %in% arousal_vars_remove)%>% 
+  droplevels()
+#run model
+nd7_aov_h4 <- aov_ez('participant','arousal_ratings',nd7_stat_h4,
+                     within=c("study_condition"),
+                     anova_table = list(es='pes'))
+knitr::kable(nice(nd7_aov_h4))
+
+nd7_h4             <- summary(pairs(emmeans(nd7_aov_h4, "study_condition")))
+pairs_es_h4        <- t_to_d(nd7_h4$t.ratio, nd7_h4$df, ci = .95)
+#decrease = ndg_arousal_long %>% filter(study_condition == "decrease")
+#decrease = decrease$arousal_ratings
+
+#view = ndg_arousal_long %>% filter(study_condition == "view_negative")
+#view = view$arousal_ratings
+
+#ttest = t.test(decrease,view)
+```
+Hypothesis #5:  a one way repeated measures ANOVA with the factor of reappraisal success (success, failure, view). If there is a significant main effect it will be followed up with paired t-tests (success vs. failure, success vs. view, failure vs. view).  
+```{r}
+study_remove_vars <- c("decrease","view_neutral")
+
+nd7_stat_h5 <- ndg_arousal_long%>%
+  filter(!study_condition %in% study_remove_vars)%>% 
+  droplevels()
+#run model
+nd7_aov_h5 <- aov_ez('participant','arousal_ratings',nd7_stat_h5,
+                     within=c("study_condition"),
+                     anova_table = list(es = 'pes'))
+knitr::kable(nice(nd7_aov_h5))
+# Follow up t-tests
+nd7_h5             <- emmeans(nd7_aov_h5, "study_condition")
+pairs_h5           <- summary(pairs(nd7_h5, adjust = "none"))
+pairs_es_h5        <- t_to_d(pairs_h5$t.ratio, pairs_h5$df, ci = .95)
+```
+#lme route
+```{r}
+bad_id_lme               <- c(24,31,38)
+
+df_ndg                   <- df_ndg %>%
+  filter(study_instruction != "NA",!id %in% bad_id_lme)%>% 
+  droplevels()
+
+df_ndg$study_instruction <- factor(df_ndg$study_instruction, levels = c("decrease","view"))
+df_ndg$id                <- as.factor(df_ndg$id)
+df_ndg$sc_image          <- as.factor(df_ndg$sc_image)
+df_ndg$sc_type           <- as.factor(df_ndg$sc_type)
+df_ndg$cb                <- as.factor(df_ndg$cb)
+df_ndg$list              <- as.factor(df_ndg$list)
+
+mixed_memory             <- mixed(test_item_resp~study_instruction*sc_type+(1|id)+ (1|sc_image),family = "binomial", method = "LRT" ,control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=100000)),df_ndg)
+mixed_memory 
+memory_means             <- modelbased::estimate_means(mixed_memory)
+memory_means
+
+mixed_memory2            <- mixed(test_item_resp~study_success_resp*sc_type+(1+study_success_resp|id)+ (1|sc_image),family = "binomial", method = "LRT" ,control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=100000)),df_ndg)
+
+memory_means2            <- modelbased::estimate_means(mixed_memory2)
+# Follow up test
+emm_i1                   <- emmeans(mixed_memory2, "study_success_resp", by = "sc_type", type = "response")
+#pairwise
+summary(pairs(emm_i1), by=NULL, adjust = "none")
+
+mb_pairs                 <- modelbased::estimate_contrasts(mixed_memory2, contrast = c("study_success_resp", "sc_type"), adjust = "none", transform = "response")
+
+mixed_memory3            <- mixed(test_item_resp~study_success_resp*sc_type + study_arousal_resp + list + cb +(1+study_success_resp|id)+ (1|sc_image),family = "binomial", method = "LRT" ,control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=100000)),df_ndg)
+mixed_memory3
+memory_means3            <- modelbased::estimate_means(mixed_memory3,at = c("study_success_resp", "sc_type"))
+memory_means3
+```
+# alternative measures
+```{r}
+study_remove_vars         <- c("decrease","view_neutral")
+#modify dataframe
+nd7_stat_alt <- nd007_alt_data%>%
+  filter(!study_instruction_condition %in% study_remove_vars,!participant %in% bad_id)%>% 
+  droplevels()
+#run Intact model
+nd7_aov_alt <- aov_ez('participant','intact',nd7_stat_alt,
+                      within=c("study_instruction_condition"),
+                      anova_table = list(es='pes'))
+knitr::kable(nice(nd7_aov_alt))
+# Follow up t-tests
+nd7_intact_pair           <- emmeans(nd7_aov_alt, "study_instruction_condition")
+emto_pairs_results        <- summary(pairs(nd7_intact_pair, adjust = "none"))
+emto_pairs_es_intact      <- t_to_d(emto_pairs_results$t.ratio, emto_pairs_results$df, ci = .95)
+
+# run trade off model
+nd7_aov_ob <- aov_ez('participant','OB',nd7_stat_alt,
+                     within=c("study_instruction_condition"),
+                     anova_table = list(es='pes'))
+knitr::kable(nice(nd7_aov_ob))
+# Follow up t-tests
+nd7_ob_means              <- emmeans(nd7_aov_ob, "study_instruction_condition")
+emto_pairs_ob             <- summary(pairs(nd7_ob_means, adjust = "none"))
+emto_es_ob                <- t_to_d(emto_pairs_ob$t.ratio, emto_pairs_ob$df, ci = .95)
+# run forget model
+nd7_aov_forget <- aov_ez('participant','F',nd7_stat_alt,
+                         within=c("study_instruction_condition"),
+                         anova_table = list(es='pes'))
+knitr::kable(nice(nd7_aov_forget))
+# Follow up t-tests
+nd7_forget_means          <- emmeans(nd7_aov_forget, "study_instruction_condition")
+emto_pairs_forget         <- summary(pairs(nd7_forget_means, adjust = "none"))
+emto_es_forget            <- t_to_d(emto_pairs_forget$t.ratio, emto_pairs_forget$df, ci = .95)
+# run forget model
+nd7_aov_bg<- aov_ez('participant','BG',nd7_stat_alt,
+                    within=c("study_instruction_condition"),
+                    anova_table = list(es='pes'))
+knitr::kable(nice(nd7_aov_bg))
+# Follow up t-tests
+nd7_bg_means              <- emmeans(nd7_aov_bg, "study_instruction_condition")
+emto_pairs_bg             <- summary(pairs(nd7_bg_means, adjust = "none"))
+emto_es_bg                <- t_to_d(emto_pairs_bg$t.ratio, emto_pairs_bg$df, ci = .95)
+```
+#alternative LMES
+```{r}
+library(ggplot2)
+library(see)
+library(modelbased)
+library(stringr)
+bad_id_lme                  <- c(24,31,38)
+
+df_ndg180                   <- df_ndg180 %>%
+  filter(study_instruction != "NA",!id %in% bad_id_lme)%>% 
+  droplevels()
+
+ndg_success$id              <- as.numeric(str_remove(ndg_success$participant, "sub-"))
+df_ndg180                   <- inner_join(df_ndg180, ndg_success, by = c('id'))
+
+df_ndg180$study_instruction <- factor(df_ndg180$study_instruction, levels = c("decrease","view"))
+df_ndg180$id                <- as.factor(df_ndg180$id)
+df_ndg180$original_scene    <- as.factor(df_ndg180$original_scene)
+df_ndg180$cb                <- as.factor(df_ndg180$cb)
+df_ndg180$list              <- as.factor(df_ndg180$list)
+df_ndg180$memory_type       <- as.factor(df_ndg180$memory_type)
+df_ndg180$study_arousal_c   <- scale(df_ndg180$study_arousal_resp, scale=FALSE)
+
+mixed_arousal180            <- mixed(study_arousal_resp~study_success_resp*memory_type+(1|id) + (1|original_scene),df_ndg180)
+arousal_means180            <- modelbased::estimate_means(mixed_arousal180)
+# 3. Plot
+mixed2_memory180            <- mixed(Rearrange_OB~study_success_resp+(1|id) + (1|original_scene),df_ndg180)
+memory2_means180            <- modelbased::estimate_means(mixed2_memory180)
+mixed_memory180             <- mixed(Intact~study_success_resp+(1|id) + (1|original_scene),df_ndg180)
+memory_means180             <- modelbased::estimate_means(mixed_memory180)
+mixed_memory_type180        <- mixed(item_acc~study_success_resp+(1|id) + (1|original_scene),df_ndg180)
+memory_means180             <- modelbased::estimate_means(mixed_memory180)
+```
+
+```{r}
+library(tidyr)
+nd007_alt_data$study_instruction_condition <- as.factor(nd007_alt_data$study_instruction_condition)
+nd007_alt_data                             <- nd007_alt_data%>%
+  mutate(failure_total = 60-success_total)
+
+nd007_alt_data$arousal_ratings_center      <- scale(nd007_alt_data$arousal_ratings, scale=FALSE)
+nd007_alt_data$arousal_ob_center           <- scale(nd007_alt_data$arousal_ob, scale=FALSE)
+
+corr_data                                  <- nd007_alt_data%>%
+  filter(study_instruction_condition %in% c("success","failure","view_negative"))%>% 
+  droplevels()
+# %>% drop_na()
+cor(corr_data$tradeoff_index, nd007_alt_data$success_total, method = c("pearson", "kendall", "spearman"))
+cor.test(corr_data$intact, corr_data$arousal_intact, method = c("pearson", "kendall", "spearman"), use = "complete.obs")
+
+library("ggpubr")
+library(ggplot2)
+library("ggExtra")
+library(cowplot) 
+# Main plot
+
+pmain <- ggscatter(corr_data, x = "arousal_ratings", y = "tradeoff_index", 
+                  add = "reg.line", conf.int = TRUE, 
+                  size = "success_total",
+                  color = "study_instruction_condition", palette = "jco",
+                  cor.coef = TRUE, cor.method = "pearson",
+                  xlab = "arousal rating resp", ylab = "trade-off")+
+  stat_cor(aes(color = study_instruction_condition), label.x = 3)  +
+  ggtitle("") + 
+  theme(legend.title=element_blank(),legend.position = "bottom")
+
+# Marginal densities along x axis
+xdens <- axis_canvas(pmain, axis = "x")+
+  geom_density(data = corr_data, aes(x = arousal_ratings, fill = study_instruction_condition),
+               alpha = 0.7, size = 0.2)+
+  ggpubr::fill_palette("jco")
+# Marginal densities along y axis
+# Need to set coord_flip = TRUE, if you plan to use coord_flip()
+ydens <- axis_canvas(pmain, axis = "y", coord_flip = TRUE)+
+  geom_density(data = corr_data, aes(x = tradeoff_index, fill = study_instruction_condition),
+               alpha = 0.7, size = 0.2)+
+  coord_flip()+
+  ggpubr::fill_palette("jco")
+p1 <- insert_xaxis_grob(pmain, xdens, grid::unit(.2, "null"), position = "top")
+p2<- insert_yaxis_grob(p1, ydens, grid::unit(.2, "null"), position = "right")
+ggdraw(p2)
+
+p2_lme           <- mixed(OB~study_instruction_condition*arousal_ob_center+success_total+(1|participant),corr_data)
+memory2_means180 <- modelbased::estimate_means(p2_lme)
+
+p2_lme           <- mixed(Rearrange_OB~study_success_resp*study_arousal_resp*success_total+(1+study_success_resp|id)+ (1|original_scene),
+                 control = lmerControl(optimizer="bobyqa", optCtrl = list(maxfun=100000)),df_ndg180)
+p2_lme_means180  <- modelbased::estimate_means(p2_lme)
+
+parameters::model_parameters(lm(formula = intact ~ arousal_intact, data = corr_data))
+
+lm_model = lm(tradeoff_index ~ study_instruction_condition * success_total, data = corr_data)
+cooksd <- cooks.distance(lm_model)
+plot(cooksd, pch="*", cex=2, main="Influential Obs by Cooks distance")  # plot cook's distance
+abline(h = 4*mean(cooksd, na.rm=T), col="red")  # add cutoff line
+text(x=1:length(cooksd)+1, y=cooksd, labels=ifelse(cooksd>4*mean(cooksd, na.rm=T),names(cooksd),""), col="red")
+influential <- as.numeric(names(cooksd)[(cooksd > 4*mean(cooksd, na.rm=T))])  # influential row numbers
+head(corr_data[influential, ])
+```
+
+```{r regression and rain}
+pmain      <- ggscatter(corr_data, x = "arousal_intact", y = "intact", 
+                        add = "reg.line", conf.int = TRUE, 
+                        size = "success_total",
+                        color = "study_instruction_condition", palette = COLOR_TEMP,
+                        cor.coef = TRUE, cor.method = "pearson",
+                        xlab = "arousal rating resp", ylab = "trade-off")+
+  scale_size(range = c(1, 10), name="Reappraisal success")+
+  stat_cor(aes(color = study_instruction_condition), label.x = 3)  +
+  ggtitle("")+
+  this_theme+ 
+  theme(legend.position = "bottom")
+pmain      <- ggpar(pmain, xlim = c(1,6), ylim = c(0,1), xticks.by = 1,
+                    legend.title = list(color = "", fill = "", size = ""),
+                    font.legend = c(14, "plain", "black"))
+pmain
+
+COLOR_TEMP <- c("#d5896f","#70a288","#dab785")
+
+c_main_p   <- ggplot(corr_data, aes(x = arousal_intact, y = intact))
+main_p     <- c_main_p +
+  geom_point(aes(color = study_instruction_condition,
+                 size = success_total),
+             alpha = 0.25, stroke = 0.7) +
+  geom_smooth(aes(color = study_instruction_condition),
+              formula = 'y ~ x',
+              method = "lm") +
+  scale_y_continuous(name = "Trade-off", 
+                     limits = c(0, 1), expand = c(0, 0)) + 
+  scale_x_continuous(name = "arousal rating resp", 
+                     limits = c(1, 6), expand = c(0, 0))+
+  scale_fill_manual(values = COLOR_TEMP) +
+  scale_color_manual(values = COLOR_TEMP,labels = c("failure","success","view")) +
+  labs(x = "arousal", y = 'trade-off', title = '')+
+  this_theme + 
+  theme(legend.title=element_blank(),legend.position = "bottom")
+
+y_rain     <- ggplot(corr_data, aes(y = intact, x = study_instruction_condition, fill = study_instruction_condition)) +
+  PupillometryR::geom_flat_violin(position = position_nudge(x = .2), alpha = .8) +
+  geom_point(aes(color = study_instruction_condition), 
+             position = position_jitter(width = .15),
+             size = .3, alpha = .5, show.legend = F) +
+  geom_boxplot(width = .3, outlier.shape = NA, alpha = .5) +
+  labs(x = "", y = "") +
+  scale_fill_manual(values = COLOR_TEMP, guide = "none") +
+  scale_color_manual(values = COLOR_TEMP,) +
+  scale_y_continuous(limits = c(0, 1), expand = c(0, 0)) + 
+  scale_x_discrete(labels = c("failure","success","view")) +
+  this_theme +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, color = COLOR_TEMP))
+
+x_rain     <- ggplot(na.omit(corr_data),
+                     aes(y = arousal_intact,
+                         x = study_instruction_condition, fill = study_instruction_condition)) +
+  PupillometryR::geom_flat_violin(position = position_nudge(x = .2), alpha = .8) +
+  geom_point(aes(color = study_instruction_condition), position = position_jitter(width = .15),
+             size = 1, alpha = .5, show.legend = F) +
+  geom_boxplot(width = .3, outlier.shape = NA, alpha = .5) +
+  labs(x = "", y = "", fill = NULL) +
+  scale_fill_manual(values = COLOR_TEMP, guide=FALSE) +
+  scale_color_manual(values = COLOR_TEMP) + 
+  scale_x_discrete(labels = c("failure","success","view"))+
+  scale_y_continuous(limits = c(1, 6), expand = c(0, 0),labels = c("1","2","3","4","5","6")) +
+  coord_flip() +
+  this_theme +
+  theme(axis.text.y = element_text( color = COLOR_TEMP))
+
+intact_p + plot_annotation(
+  title = 'Remembering whole scenes (reduced trade-off?)',
+  subtitle = '',caption = ''
+)
+to_index + plot_annotation(
+  title = 'Trade-off index (Objects - Backgrounds)',
+  subtitle = '',caption = ''
+)
+alt_ob + plot_annotation(
+  title = 'Whole scene trade-off (R: ob, F: bg)',
+  subtitle = '',caption = ''
+)
+
+intact_p <- x_rain + plot_spacer() + pmain + y_rain + 
+  plot_layout(ncol = 2, nrow = 2, widths = c(4, 1), heights = c(1, 4))
+
+to_index <- x_rain + plot_spacer() + pmain + y_rain + 
+  plot_layout(ncol = 2, nrow = 2, widths = c(4, 1), heights = c(1, 4))
+
+alt_ob   <- x_rain + plot_spacer() + pmain + y_rain + 
+  plot_layout(ncol = 2, nrow = 2, widths = c(4, 1), heights = c(1, 4))
+
+alt_ob
+```
+#examine reappraisal success
+```{r}
+library(smplot)
+library(gganimate)
+
+df_ndg180 <- df_ndg180%>%
+  mutate(success_coded  = case_when(
+    study_success_resp == 'success' ~ 1,
+    study_success_resp == 'failure' ~ 0
+    # view trials are NA
+  ))
+
+# block order
+df_ndg180$block_number <- as.factor(df_ndg180$block_number)
+
+sm_test <- df_ndg180%>%
+  select(id,study_instruction,block_number,success_coded)%>%
+  filter(study_instruction != 'view')%>%
+  group_by(id,block_number)%>%
+  summarise(avg_success_block = mean(success_coded))
+
+sm_test$block_renum <- rep(1:6, times = 40)
+sm_test$id <- as.factor(sm_test$id)
+
+block_plot <- sm_raincloud(data = sm_test, x = as.factor(block_renum), y = avg_success_block,
+             boxplot_alpha = 0.5, color = 'white', shape = 21, sep_level = 3) +
+  scale_x_continuous(limits = c(0,7), labels = c('1', '2', '3', '4','5', '6'), breaks = c(1,2,3,4,5,6)) +
+  scale_y_continuous(limits = c(.3,1.05), breaks = c(.4,.6,.8,1)) +
+  xlab('Block order')+
+  ylab('success rate')+
+  scale_color_manual(values = rep('transparent',6)) + 
+  scale_fill_manual(values = sm_palette(6))
+
+block_plot <- block_plot+
+  labs(title = 'Time: {frame_time}', x = 'Blocks', y = 'Reappraisal success') +
+  transition_time(block_renum) +
+  ease_aes('linear')
+
+
+
+block_plot+ 
+  transition_states(block_renum,
+                    transition_length = 2,
+                    state_length = 1)+ 
+  enter_fade() + enter_drift(x_mod = -1) + 
+#  exit_shrink() + exit_drift(x_mod = 5)+ 
+  ggtitle('Now showing {closest_state}',
+          subtitle = 'Frame {frame} of {nframes}')
+
+block_plot
+
+# block trial 
+sm_bt2 <- df_ndg180%>%
+  select(id,study_instruction,block_trial,success_coded)%>%
+  filter(study_instruction != 'view')%>%
+  group_by(id,block_trial)%>%
+  summarise(avg_success_block = mean(success_coded))
+#sm_bt$block_renum <- rep(1:6, times = 37)
+
+trial_plot <- sm_raincloud(data = sm_bt2, x = as.factor(block_trial), y = avg_success_block,
+             boxplot_alpha = 0.5, color = 'white', shape = 21, sep_level = 4 , jitter_width =  .1) +
+  scale_x_continuous(limits = c(0,11), labels = c('1', '2', '3', '4','5', '6','7','8','9','10'), breaks = c(1,2,3,4,5,6,7,8,9,10)) +
+  scale_y_continuous(limits = c(.3,1.05), breaks = c(.4,.6,.8,1)) +
+  xlab('Block trial order')+
+  ylab('success rate')+
+  scale_color_manual(values = rep('transparent',10)) + 
+  scale_fill_manual(values = sm_palette(10))
+
+trial_plot + transition_states(block_trial, wrap = FALSE) +
+  shadow_mark()+ 
+  enter_fade() + enter_drift(x_mod = -1) + 
+#  exit_shrink() + exit_drift(x_mod = 5)+ 
+  ggtitle('Now showing {closest_state}',
+          subtitle = 'Frame {frame} of {nframes}')
+
+
+
+  transition_states(block_trial,
+                    transition_length = 4,
+                    state_length = 2)+ 
+  enter_fade() + enter_drift(x_mod = -1) + 
+#  exit_shrink() + exit_drift(x_mod = 5)+ 
+  ggtitle('Now showing {closest_state}',
+          subtitle = 'Frame {frame} of {nframes}')
+
+anim_save("test", animation = last_animation())
+
+```
+
+```{r}
+# We'll start with a static plot
+p <- ggplot(iris, aes(x = Petal.Width, y = Petal.Length)) + 
+  geom_point()
+
+plot(p)
+
+anim <- p + 
+  transition_states(Species,
+                    transition_length = 2,
+                    state_length = 1)
+
+anim
+```
+

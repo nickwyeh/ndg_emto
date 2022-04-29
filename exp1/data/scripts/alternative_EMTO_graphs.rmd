@@ -1,0 +1,86 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+rm(list=ls()) # clear the workspace of all data objects
+ls() # list number of data objects in the workspace
+
+# load packages
+library(Hmisc)
+library(ggplot2)
+library(car)
+library(psych)
+library(plyr)
+library(reshape)
+
+setwd("C:/Users/nyeh/Desktop/fall_2021/NDG/exp1/data/analyses")
+#
+nd007_data = read.csv('tradeoff_datagraphs.csv',header = T)
+#nd007_data = read.csv('hit_fa_data_longgraphs.csv',header = T)
+
+#nd007_success_count = read.csv('reappraisal_strategy_success.csv',header = T)
+
+
+```
+```{r}
+bad_id = c("sub-031","sub-024","sub-039")
+
+nd007_data$participant=factor(nd007_data$participant)
+is.factor(nd007_data$participant)
+
+library(dplyr)
+
+nd7_emto = nd007_data %>% 
+  filter(study_instruction_condition %in% c("failure","success", "view_negative","view_neutral"),!participant %in% bad_id)%>% 
+  droplevels()
+
+detach("package:dplyr", unload=TRUE)
+
+condition <- nd7_emto$study_instruction_condition
+#Condition <- nd7_emto$study_instruction_condition
+outcome = nd7_emto$F
+#valence = nd7_emto$valence
+
+# Create emotional memory trade-off figure
+df3 <- data.frame(condition, outcome)
+df3<-na.omit(df3)
+dfc <- summarySE(df3, measurevar = "outcome", groupvars = c("condition")) #insert variables
+
+
+dfc
+# 1= negative background, 2 = negative objects, 3 = neutral backgrounds, 4 = neutral backgrounds
+
+Change_plot = ggplot (na.omit(dfc), aes (condition, outcome, fill = condition))
+p1 = Change_plot +
+    stat_summary(fun.y = "mean", geom = "bar", aes(width = .75), colour = "black", position = "dodge", alpha = .6)+
+    scale_fill_manual(values = c("failure" = "red", "success" = "green", "view_negative" = "slategray","view_neutral" = "grey"),
+                    labels = c( "failure", "success","view_negative")
+                    ) +
+  scale_x_discrete(labels=c("failure", "success","view_negative","view_neutral") 
+                  )+
+  geom_errorbar(aes(ymin = outcome - se,  
+                    ymax = outcome + se), 
+                size=.3, width=.1,color = "black", position=position_dodge(.75))+
+  geom_point(data = df3,aes(x = condition, y = outcome, color = condition),
+               position = position_jitter(width = .1, height = 0), 
+               size = 4, shape = 20, alpha = .6)+
+   scale_color_manual(values = c("failure" = "red", "success" = "green", "view_negative" = "slategray","view_neutral" = "grey"),
+                    labels = c( "failure", "success","view_negative","view_neutral")
+                    )  +
+  xlab ("") +
+  labs(subtitle = '')+
+  scale_y_continuous("\n", breaks=c(0,.1,.2,.3,.4,.5,.6,.7), expand = c(0, 0))+
+  coord_cartesian(y=c(0,.7)) +
+   ggtitle ("emotional memory trade-off\n")+
+   theme(plot.title = element_text(hjust = 0.5))+
+  pres_theme+
+ theme(legend.title=element_blank()) + 
+  theme(legend.position="none")
+p1
+```

@@ -1,0 +1,458 @@
+---
+title: "nd007_graphs"
+author: "Nick"
+date: "9/8/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+rm(list=ls()) # clear the workspace of all data objects
+ls() # list number of data objects in the workspace
+
+# load packages
+library(Hmisc)
+library(ggplot2)
+library(car)
+library(psych)
+library(plyr)
+library(reshape)
+
+setwd("C:/Users/nyeh/Desktop/fall_2021/NDG/exp1/data/analyses")
+#
+nd007_data = read.csv('memory_measures_data_longgraphs.csv',header = T)
+#nd007_data = read.csv('hit_fa_data_longgraphs.csv',header = T)
+
+#nd007_success_count = read.csv('reappraisal_strategy_success.csv',header = T)
+
+
+```
+
+```{r Standard error function}
+summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=TRUE,
+                      conf.interval=.95, .drop=TRUE) 
+{  require(plyr) 
+  length2 <- function (x, na.rm=TRUE) 
+  {if (na.rm) sum(!is.na(x))
+    else length(x)}
+  datac <- ddply(data, groupvars, .drop=.drop, .fun = function(xx, col) 
+  {c(N = length2(xx[[col]], na.rm=na.rm), mean = mean   (xx[[col]], na.rm=na.rm),
+     sd = sd (xx[[col]], na.rm=na.rm))},
+  measurevar)
+  datac <- rename(datac, c("mean" = measurevar))
+  datac$se <- datac$sd / sqrt(datac$N)  # Calculate standard error of the mean
+  ciMult <- qt(conf.interval/2 + .5, datac$N-1)
+  datac$ci <- datac$se * ciMult
+  return(datac) }
+
+pres_theme <- theme(    
+  panel.background    = element_blank() ,            #   control the major gridlines 
+  panel.grid.major.y  = element_line() ,             #   suppress the vertical grid lines
+  panel.grid.major.x  = element_blank() ,            #   suppress the minor grid lines
+  panel.grid.minor    = element_blank() ,            #   add axes
+  axis.text           = element_text( size=20, family="Times", colour='black'),   #   tick labels' size, font & color. 
+  axis.line.x         = element_line( size=.8),   #   adjust the axis ticks
+  axis.line.y         = element_line( size=.8),
+  axis.ticks          = element_line( size=.8, colour='black'),   #   axis colors and thickness 
+  axis.title.y        = element_text( angle=90, vjust= 1.5, hjust=.47,    
+                                      size=20, family="Times"),  
+  axis.title.x        = element_text( vjust=-.5, hjust = .505,                    
+                                      size=20, family="Times "),                   
+  plot.title = element_text (size=20, family="Times", colour='black', face = 'bold'),
+  legend.text = element_text(size=20, family="Times"),
+  legend.title = element_text(size=20, family="Times", face = 'bold')
+  )
+```
+
+```{r}
+nd007_data$participant=factor(nd007_data$participant)
+is.factor(nd007_data$participant)
+
+library(dplyr)
+
+nd7_emto = nd007_data %>% 
+  filter(study_instruction_condition %in% c("view", "decrease"))
+
+detach("package:dplyr", unload=TRUE)
+
+ObBg <- nd7_emto$scene_component
+#Condition <- nd7_emto$study_instruction_condition
+outcome = nd7_emto$corrected_recognition
+valence = nd7_emto$valence
+part_id = as.factor(nd7_emto$participant)
+
+# Create emotional memory trade-off figure
+df3 <- data.frame(ObBg, valence, outcome,part_id)
+df3<-na.omit(df3)
+dfc <- summarySE(df3, measurevar = "outcome", groupvars = c("valence","ObBg")) #insert variables
+
+dfc$x_coord = c(1,1.8,3,3.8)
+dfc
+# 1= negative background, 2 = negative objects, 3 = neutral backgrounds, 4 = neutral backgrounds
+library(dplyr)
+
+df3 = df3%>%
+  mutate(x_coord = ifelse(ObBg == "objects" & valence == "negative", 1.8, 
+                   ifelse(ObBg == "background" & valence == "negative", 1,
+                   ifelse(ObBg == "objects" & valence == "neutral", 3.8,
+                   ifelse(ObBg == "background" & valence == "neutral", 3,5)))))
+ detach("package:dplyr", unload=TRUE)
+                           
+
+
+Change_plot = ggplot (na.omit(dfc), aes (x_coord, outcome, fill =  ObBg))
+p1 =Change_plot +
+    stat_summary(fun.y = "mean", geom = "bar", aes(width = .75), colour = "black", position = "dodge", alpha = .6)+
+    scale_fill_manual(values = c( "background" = "grey", "objects" = "slategray"),
+                    labels = c( "background", "object")
+                    ) +
+  scale_x_discrete(labels=c("negative","neutral") 
+                  )+
+  geom_errorbar(aes(ymin = outcome - se,  
+                    ymax = outcome + se), 
+                size=.3, width=.1,color = "black", position=position_dodge(.75))+
+  geom_point(data = df3,aes(x = x_coord, y = outcome, color = ObBg),
+               position = position_jitter(width = .1, height = 0), 
+               size = 4, shape = 20, alpha = .6)+
+    scale_color_manual(values = c( "background" = "grey", "objects" = "slategray"),
+                    labels = c( "background", "object")
+                    )  +
+#   geom_line(data = df3,aes(x=x_coord,y=outcome, color = "grey", group = part_id))+
+  xlab ("") +
+  labs(subtitle = '')+
+  scale_y_continuous("Corrected recognition\n", breaks=c(0,.1,.2,.3,.4,.5,.6,.7,.8), expand = c(0, 0))+
+  coord_cartesian(y=c(0,.9)) +
+  scale_x_continuous(breaks = (c(1.4,3.4)),
+                       labels = c("negative","neutral")) + 
+  ggtitle ("Emotional memory trade-off\n")+
+   theme(plot.title = element_text(hjust = 0.5))+
+  pres_theme+
+ theme(legend.title=element_blank()) + 
+  theme(legend.position="bottom")
+p1
+```
+
+```{r}
+nd007_arousal_data = read.csv('arousal_data_long.csv',header = T)
+nd007_arousal_data$study_condition = as.factor(nd007_arousal_data$study_condition)
+nd007_arousal_data$study_condition = factor(nd007_arousal_data$study_condition, levels = c("failure","success","view_negative"))
+library(dplyr)
+nd7_arousal = nd007_arousal_data %>% 
+  filter(study_condition %in% c("success", "failure","view_negative"))%>% 
+  droplevels()
+detach("package:dplyr", unload=TRUE)
+
+Condition <- nd7_arousal$study_condition
+outcome = nd7_arousal$arousal_ratings
+
+
+# Create emotional memory trade-off figure
+df3 <- data.frame(Condition, outcome)
+df3<-na.omit(df3)
+dfc <- summarySE(df3, measurevar = "outcome", groupvars = c("Condition")) #insert variables
+
+dfc$x_coord = c(1, 1.8, 2.6)
+dfc
+
+library(dplyr)
+
+df3 = df3%>%
+  mutate(x_coord = ifelse(Condition == "failure", 1, 
+                   ifelse(Condition == "success", 1.8,
+                   ifelse(Condition == "view_negative", 2.6,5))))
+df3 = df3%>%
+    filter(Condition %in% c("success", "failure","view_negative"))
+
+ detach("package:dplyr", unload=TRUE)
+                           
+
+
+Change_plot = ggplot (na.omit(dfc), aes (x_coord, outcome, fill =  Condition))
+p2 =Change_plot +
+    stat_summary(fun.y = "mean", geom = "bar", aes(width = .75), colour = "black", position = "dodge", alpha = .6)+
+#    scale_fill_manual(values = c( "failure" = "red", "success" = "green", "view_negative" = "grey"),
+#                    labels = c( "failure", "success", "view")
+#                    ) +
+#    scale_fill_brewer(palette = "Dark2")+
+    scale_fill_manual(values = c("#DC0000FF", "#4DBBD5FF", "#00A087FF"))+
+    geom_errorbar(aes(ymin = outcome - se,  
+                    ymax = outcome + se), 
+                size=.3, width=.1,color = "black", position=position_dodge(.75))+
+  geom_point(data = df3,aes(x = x_coord, y = outcome, color = Condition),
+               position = position_jitter(width = .1, height = 0), 
+              size = 4, shape = 20, alpha = .6)+
+#    scale_color_manual(values = c( "failure" = "red", "success" = "green", "view_negative" = "grey"),
+#                    labels = c( "failure", "success", "view")
+#                    )  +
+#      scale_color_brewer(palette = "Dark2")+
+#   scale_colour_manual(values = c("#E7298A", "#1B9E77", "#D95F02"))+
+    scale_colour_manual(values = c("#DC0000FF", "#4DBBD5FF", "#00A087FF"))+
+
+   xlab ("") +
+  labs(subtitle = '')+
+  scale_y_continuous("Arousal ratings\n", breaks=c(1,2,3,4,5,6), expand = c(0, 0))+
+  coord_cartesian(y=c(1,6.1)) +
+  scale_x_continuous(breaks = (c(1,1.8,2.6)),
+                       labels = c("failure","success","view")) + 
+  ggtitle ("\n")+
+   theme(plot.title = element_text(hjust = 0.5))+
+  pres_theme+
+ theme(legend.title=element_blank()) + 
+  theme(legend.position="none")
+p2
+
+```
+
+
+```{r}
+nd007_data$participant=factor(nd007_data$participant)
+is.factor(nd007_data$participant)
+
+library(dplyr)
+
+nd7_emto = nd007_data %>% filter(study_instruction_condition != "decrease")
+
+nd7_neg_data = nd007_data %>% filter(study_instruction_condition != "decrease",valence == "negative")
+#nd7_neg_data = nd007_data %>% filter(study_condition != "decrease",valence == "negative")
+#nd7_neg_data = nd7_neg_data %>% filter(study_condition != "FA",valence == "negative")
+
+
+nd7_neg_data = nd007_data %>% filter(study_instruction_condition != "decrease")
+
+detach("package:dplyr", unload=TRUE)
+
+ObBg <- nd7_neg_data$scene_component
+#ObBg <- nd7_neg_data$sc
+
+Condition <- nd7_neg_data$study_instruction_condition
+#Condition <- nd7_neg_data$study_condition
+
+
+outcome = nd7_neg_data$corrected_recognition
+#outcome = nd7_neg_data$proportion
+
+valence = nd7_neg_data$valence
+df3 <- data.frame(ObBg, Condition, valence, outcome)
+df3<-na.omit(df3)
+dfc <- summarySE(df3, measurevar = "outcome", groupvars = c("Condition","ObBg")) #insert variables
+dfc
+
+Change_plot = ggplot (na.omit(dfc), aes (Condition, outcome, fill =  ObBg))
+#Change_plot +
+#  geom_bar (stat="identity")
+p1 =Change_plot +
+     #stat_summary(fun.y = "mean", geom = "bar", aes(width = .5), colour = "black", position = "dodge")+
+  stat_summary(fun.y = "mean", geom = "bar", aes(width = .75), colour = "black", position = "dodge")+
+
+#  guides(color=guide_legend(override.aes=list(shape=46)))+
+  #ggtitle ("Anxiety Change")+
+  scale_fill_manual(values = c( "background" = "blue", "objects" = "goldenrod3"),
+                    labels = c( "background", "object")
+                    #guide  = FALSE
+                    ) +
+  scale_x_discrete(labels=c("Failure","Success", "View") 
+                  )+
+  geom_errorbar(aes(ymin = outcome - se,  # insert DV
+                    ymax = outcome + se), # insert DV
+                size=.3, width=.1,color = "black", position=position_dodge(.75)) +
+  xlab ("") +
+  labs(subtitle = 'a')+
+  scale_y_continuous("corrected recognition\n", breaks=c(0,.1,.2,.3,.4,.5,.6,.7), expand = c(0, 0))+
+  coord_cartesian(y=c(0,.7)) +
+  ggtitle ("Negative scenes (N = 8)\n")+
+   theme(plot.title = element_text(hjust = 0.5))+
+  pres_theme+
+ theme(legend.title=element_blank()) + 
+  theme(legend.position="bottom")
+p1
+dev.off()
+
+library(dplyr)
+nd7_neutral_data = nd007_data %>% filter(study_instruction_condition != "decrease",valence == "neutral")
+detach("package:dplyr", unload=TRUE)
+
+#nd7_neg_data = nd007_data %>% filter(study_instruction_condition != "decrease")
+
+ObBg <- nd7_neutral_data$scene_component
+#Condition <- nd7_neutral_data$study_instruction_condition
+outcome = nd7_neutral_data$corrected_recognition
+valence = nd7_neutral_data$valence
+df3 <- data.frame(ObBg, valence, outcome)
+df3<-na.omit(df3)
+dfc <- summarySE(df3, measurevar = "outcome", groupvars = c("ObBg","valence")) #insert variables
+dfc
+
+Change_plot = ggplot (na.omit(dfc), aes (valence,outcome, fill =  ObBg))
+#Change_plot +
+#  geom_bar (stat="identity")
+p2 =Change_plot +
+     #stat_summary(fun.y = "mean", geom = "bar", aes(width = .5), colour = "black", position = "dodge")+
+  stat_summary(fun.y = "mean", geom = "bar", aes(width = .75), colour = "black", position = "dodge")+
+
+#  guides(color=guide_legend(override.aes=list(shape=46)))+
+  #ggtitle ("Anxiety Change")+
+  scale_fill_manual(values = c( "background" = "blue", "objects" = "goldenrod3"),
+                    labels = c( "background", "object")
+                    #guide  = FALSE
+                    ) +
+  scale_x_discrete(labels=c( "View") 
+                  )+
+  geom_errorbar(aes(ymin = outcome - se,  # insert DV
+                    ymax = outcome + se), # insert DV
+                size=.3, width=.1,color = "black", position=position_dodge(.75)) +
+  xlab ("") +
+  labs(subtitle = 'b')+
+  scale_y_continuous("corrected recognition\n", breaks=c(0,.1,.2,.3,.4,.5,.6,.7), expand = c(0, 0))+
+  coord_cartesian(y=c(0,.7)) +
+  ggtitle ("Neutral scenes\n")+
+   theme(plot.title = element_text(hjust = 0.5))+
+  pres_theme+
+ theme(legend.title=element_blank()) + 
+  theme(legend.position="bottom")
+p2
+
+```
+
+
+```{r}
+nd007_arousal_data = read.csv('arousal_data_long.csv',header = T)
+
+nd007_arousal_data$study_condition=factor(nd007_arousal_data$study_condition)
+is.factor(nd007_arousal_data$study_condition)
+
+nd007_arousal_data$participant=factor(nd007_arousal_data$participant)
+is.factor(nd007_arousal_data$participant)
+library(dplyr)
+
+nd007_arousal_data = nd007_arousal_data %>% filter(study_condition != "decrease")
+
+head(nd007_arousal_data)
+
+detach("package:dplyr", unload=TRUE)
+
+#ObBg <- nd007_arousal_data$scene_component
+Condition <- nd007_arousal_data$study_condition
+outcome = nd007_arousal_data$arousal_ratings
+df3 <- data.frame(Condition, outcome)
+df3<-na.omit(df3)
+dfc <- summarySE(df3, measurevar = "outcome", groupvars = c("Condition")) #insert variables
+dfc
+
+Change_plot = ggplot (na.omit(dfc), aes (Condition, outcome, fill =  Condition))
+p3 =Change_plot +
+  stat_summary(fun.y = "mean", geom = "bar", aes(width = .75), colour = "black", position = "dodge")+
+  scale_fill_manual(values = c( "failure" = "red", "success" = "green", "view_negative" = "darkgrey", "view_neutral" = "grey"),
+                    labels = c( "Failure","Success", "Negative View","Neutral view")
+                    ) +
+  scale_x_discrete(labels=c("Failure","Success", "Negative View","Neutral view")
+                  )+
+  geom_errorbar(aes(ymin = outcome - se,  # insert DV
+                    ymax = outcome + se), # insert DV
+                size=.3, width=.1,color = "black", position=position_dodge(.75)) +
+  xlab ("") +
+  labs(subtitle = 'c')+
+  scale_y_continuous("Arousal rating\n", breaks=c(1,2,3,4), expand = c(0, 0))+
+  coord_cartesian(y=c(1,4)) +
+  ggtitle ("\n")+
+   theme(plot.title = element_text(hjust = 0.5))+
+  pres_theme+
+ theme(legend.title=element_blank()) +
+  theme(legend.position = "None")
+p3
+
+```
+
+
+
+```{r}
+nd7_stat= nd007_data
+library(afex)
+library(emmeans)
+library(dplyr)
+head(nd7_stat)
+nd7_stat_neg = nd7_stat %>%filter(valence == "negative", study_instruction_condition != "decrease")
+
+nd7_stat_neg_aov <- aov_ez('participant','corrected_recognition',nd7_stat_neg,
+                within=c('study_instruction_condition',"scene_component"),
+                anova_table = list(es='pes'))
+nd7_stat_neg_aov
+knitr::kable(nice(nd7_stat_neg_aov))
+
+m_nd7_stat_neg_aov = emmeans(nd7_stat_neg_aov, "study_instruction_condition", by = c("scene_component"))
+
+m_nd7_stat_neg_aov
+summary(pairs(m_nd7_stat_neg_aov), by=NULL, adjust = "none")
+corr_matric = matrix(1:6, nrow = 2, ncol = 3)
+
+corr_matric= cbind(c(.443,.467,.533),c(.103,.169,.158)) 
+corr_matric
+cor(corr_matric)
+
+nd7_lme = read.csv('lme_data.csv',header = T)
+# load packages
+library(lme4)
+library(nlme)
+library(dplyr)
+
+
+head(nd7_lme)
+nd7_lme$sc_type=as.factor(nd7_lme$sc_type)
+nd7_lme$sc_image=as.factor(nd7_lme$sc_image)
+nd7_lme$sc_valence=as.factor(nd7_lme$sc_valence)
+nd7_lme$scene_valence=as.factor(nd7_lme$scene_valence)
+nd7_lme$study_instruction=as.factor(nd7_lme$study_instruction)
+nd7_lme$id=as.factor(nd7_lme$id)
+nd7_lme$original_scene=as.factor(nd7_lme$original_scene)
+nd7_lme$study_success_resp=as.factor(nd7_lme$study_success_resp)
+nd7_lme_subset = nd7_lme %>%filter(study_instruction != "na", scene_valence != "neutral")
+
+nd7_lme_subset <- nd7_lme_subset %>%
+  mutate(study_success_resp = relevel(study_success_resp, ref = "view"),
+         sc_type = relevel(sc_type, ref = "background"),
+         sc_valence=relevel(sc_valence,ref = "neutral"))
+
+lm = glmer(item_acc ~sc_type*study_success_resp + (1+study_success_resp|id),  data = nd7_lme_subset, family = binomial)
+summary(lm)
+
+mixed_model = mixed(item_acc ~sc_type*study_success_resp +  (1|id),nd7_lme_subset,family = binomial, method = "LRT",control = glmerControl(optCtrl = list(maxfun=1e6)))
+mixed_model
+
+m_nd7_stat_neg_aov = emmeans(mixed_model, "study_success_resp", by = c("sc_type"))
+
+m_nd7_stat_neg_aov
+summary(pairs(m_nd7_stat_neg_aov), by=NULL, adjust = "none")
+
+mixed_model = mixed(study_arousal_resp ~study_success_resp +  (1|id),nd7_lme_subset)
+mixed_model
+
+lm2 = lmer(study_arousal_resp ~study_success_resp + (1+study_success_resp|id),  data = nd7_lme_subset)
+summary(lm2)
+
+
+#nd7_lme_subset = nd7_stat %>%filter(valence == "negative", study_instruction_condition != "decrease")
+
+nd7_stat_neg_aov <- aov_ez('id','item_acc',nd7_lme_subset,
+                within=c("sc_type",'study_success_resp'),
+                anova_table = list(es='pes'))
+nd7_stat_neg_aov
+knitr::kable(nice(nd7_stat_neg_aov))
+
+m_nd7_stat_neg_aov = emmeans(nd7_stat_neg_aov, "study_success_resp", by = c("sc_type"))
+
+m_nd7_stat_neg_aov
+summary(pairs(m_nd7_stat_neg_aov), by=NULL, adjust = "none")
+```
+
+
+
+
+```{r}
+library(patchwork)
+tiff(".tiff", units="in", width=12, height=8, res=100)
+
+p1 / p2 
+```
+
