@@ -1,0 +1,232 @@
+---
+title: "Stats and Plots"
+author: "nick"
+date: "3/25/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+rm(list=ls()) # clear the works pace of all data objects
+ls() # list number of data objects in the work space
+library(dplyr)
+library(afex)
+library(emmeans)
+library(effectsize)
+library(patchwork)
+library(ggplot2)
+#  may also need modelbased and PupillometryR packages for plotting
+source("rain_ob_bg.R") #code for raincloud plots
+
+# additional code for plots
+this_theme <- theme(    
+    panel.background    = element_blank() ,            #   control the major gridlines 
+    panel.grid.major.y  = element_line() ,             #   suppress the vertical grid lines
+    panel.grid.major.x  = element_blank() ,            #   suppress the minor grid lines
+    panel.grid.minor    = element_blank() ,            #   add axes
+    axis.text           = element_text(size=20, family="Times", colour='black'),   #   tick labels' size, font & color. 
+    axis.line.x         = element_line( size=.8),   #   adjust the axis ticks
+    axis.line.y         = element_line( size=.8),
+    axis.ticks          = element_line( size=.8, colour='black'),   #   axis colors and thickness 
+    axis.title.y        = element_text( angle=90, vjust= 1.5, hjust=.47,    
+                                        size=20, family="Times"),  
+    axis.title.x        = element_text(vjust=-.5, hjust = .505,                    
+                                       size=20, family="Times"),                   
+    plot.title = element_text (size=20, family="Times", colour='black', face = 'bold'),
+    legend.text = element_text(size=20, family="Times"),
+    legend.title = element_text(size=20, family="Times", face = 'bold'),
+    plot.subtitle = element_text(size=20,  face="bold", color="black")
+  )
+```
+
+
+```{r}
+#setwd("") set working directory 
+ndg_data_long    <- read.csv('memory_measures_data_longgraphs.csv',header = T)
+ndg_arousal_long <- read.csv('arousal_data_long.csv',header = T)
+```
+
+```{r}
+#Factor variables
+vars_factor                   <- c("participant","study_instruction_condition","valence","scene_component")
+vars_a_factor                 <- c("participant","study_condition")
+
+ndg_data_long[vars_factor]    <- data.frame(lapply(ndg_data_long[vars_factor], factor))
+ndg_arousal_long[vars_factor] <- data.frame(lapply(ndg_arousal_long[vars_a_factor], factor))
+
+# clean up dataframes 
+ndg_arousal_long <- arrange(ndg_arousal_long, participant, study_condition)
+```
+# OSF Hypothesis #1  | Hypothessis #3 for manuscript: 2 (valence: negative, neutral) X 2 (scene component: object, background) repeated measures ANOVA for the view trials. Follow up t-tests carried out for significant main effects or interactions.
+```{r}
+nd7_stat_h1 <- ndg_data_long%>%
+  filter(study_instruction_condition == "view")%>% 
+  droplevels()
+#run model
+nd7_aov_h1 <- aov_ez('participant','corrected_recognition',nd7_stat_h1,
+                     within=c("valence","scene_component"),
+                     anova_table = list(es='pes'))
+knitr::kable(nice(nd7_aov_h1))
+# Follow up t-tests
+
+nd7_interaction2_h1    <- emmeans(nd7_aov_h1, "valence", by = c("scene_component"))
+emto_pairs3_h2         <- summary(pairs(nd7_interaction2_h1, adjust = "none"))
+emto_pairs2_es_h2      <- t_to_d(emto_pairs3_h2$t.ratio, emto_pairs3_h2$df, ci = .95)
+
+#additional descriptives for means
+emmeans(nd7_aov_h1, "valence")
+emmeans(nd7_aov_h1, "scene_component")
+```
+# OSF Hypothesis # 2 | Manuscript #4 :  2 (study instruction: reappraise, view) x 2 (scene component: object, background) repeated measures ANOVA for decrease trials. Follow up t-tests will be carried out for significant main effects or interactions.
+```{r}
+study_remove_vars <- c("success","failure")
+
+nd7_stat_h2 <- ndg_data_long%>%
+  filter(valence == "negative",!study_instruction_condition %in% study_remove_vars)%>% 
+  droplevels()
+#run model
+nd7_aov_h2 <- aov_ez('participant','corrected_recognition',nd7_stat_h2,
+                     within=c("study_instruction_condition","scene_component"),
+                     anova_table = list(es='pes'))
+knitr::kable(nice(nd7_aov_h2))
+
+# additional descriptives
+emmeans(nd7_aov_h2, "scene_component")
+emmeans(nd7_aov_h2, "study_instruction_condition")
+emmeans(nd7_aov_h2, "study_instruction_condition", by = c("scene_component"))
+
+#visualize
+# set up dataframes
+cr_df            <- modelbased::estimate_means(nd7_aov_h2)
+cr_df$x_location <- c(.4,.6) + .1
+cr_df_objects    <- cr_df%>%
+  filter(scene_component == "objects")
+
+df2_x_axis = nd7_stat_h2 %>%
+  mutate(x_location = 
+           case_when(study_instruction_condition == "decrease" ~.4,
+                     study_instruction_condition == "view" ~.6)) %>%
+  filter(scene_component == "objects")
+
+# define plot features
+sc_type        <- "Objects"
+memory_measure <- "Corrected recognition" 
+plot_colors    <- c("#3C5488FF", "#00A087FF") # colors for graph
+x_break        <- c(.4,.6)
+x_label        <- c("Decrease","View")
+# Make the plots
+rain_objects_reg <- make_cloud_plot(df2_x_axis, cr_df_objects,'corrected_recognition', memory_measure, plot_colors, x_break, x_label)
+
+#backgrounds
+cr_df_background <- cr_df%>%
+  filter(scene_component == "background")
+cr_df_background
+
+df2_x_axis_bg <- nd7_stat_h2 %>%
+  mutate(x_location = 
+           case_when(study_instruction_condition == "decrease" ~.4,
+                     study_instruction_condition == "view" ~.6)) %>%
+  filter(scene_component == "background")
+
+# Make the plots
+memory_measure <- "Corrected recognition" 
+sc_type        <- "Backgrounds"
+rain_bg_reg    <- make_cloud_plot(df2_x_axis_bg, cr_df_background, 'corrected_recognition', memory_measure, plot_colors, x_break, x_label)
+
+rain_objects_reg + rain_bg_reg
+```
+# OSF Hypothesis #3 | Manuscript # 5:  a 3 (reappraisal success: success, failure, view) x 2 (scene component: object, background) repeated measures ANOVA on corrected hits for negative scenes. Follow up t-tests will be carried out for significant main effects or interactions.
+```{r}
+study_remove_vars <- c("decrease","view_neutral")
+nd7_stat_h3       <- ndg_data_long%>%
+  filter(valence == "negative", !study_instruction_condition %in% study_remove_vars)%>% 
+  droplevels()
+#run model
+nd7_aov_h3 <- aov_ez('participant','corrected_recognition',nd7_stat_h3,
+                     within=c("study_instruction_condition","scene_component"),
+                     anova_table = list(es='pes'))
+knitr::kable(nice(nd7_aov_h3))
+# Follow up t-tests
+nd7_si_h3             <- emmeans(nd7_aov_h3, "study_instruction_condition")
+emto_pairs_h3         <- summary(pairs(nd7_si_h3, adjust = "none"))
+emto_pairs_es_h3      <- t_to_d(emto_pairs_h3$t.ratio, emto_pairs_h3$df, ci = .95)
+
+nd7_interaction_h3    <- emmeans(nd7_aov_h3, "study_instruction_condition", by = c("scene_component"))
+pairs_int             <- summary(pairs(nd7_interaction_h3, adjust = "none"))
+emto_pairs_es_int     <- t_to_d(pairs_int$t.ratio, pairs_int$df, ci = .95)
+
+# visualize 
+# set up dataframes
+cr_df            <- modelbased::estimate_means(nd7_aov_h3)
+cr_df$x_location <- c(.4,.6,.8) + .1
+cr_df_objects    <- cr_df%>%
+  filter(scene_component == "objects")
+
+df2_x_axis <- nd7_stat_h3 %>%
+  mutate(x_location = 
+           case_when(study_instruction_condition == "success" ~.6,
+                     study_instruction_condition == "failure" ~.4,
+                     study_instruction_condition == "view" ~.8)) %>%
+  filter(scene_component == "objects")
+
+# define plot features
+sc_type        <- "Objects"
+memory_measure <- "Corrected recognition" 
+plot_colors    <- c("#DC0000FF", "#4DBBD5FF", "#00A087FF")
+x_break        <- c(.4,.6,.8)
+x_label        <- c("Failure","Success","View")
+# Make the plots
+rain_objects   <- make_cloud_plot(df2_x_axis, cr_df_objects,'corrected_recognition', memory_measure, plot_colors, x_break, x_label)
+
+#backgrounds
+cr_df_background <- cr_df%>%
+  filter(scene_component == "background")
+
+df2_x_axis_bg    <- nd7_stat_h3 %>%
+  mutate(x_location = 
+           case_when(study_instruction_condition == "success" ~.6,
+                     study_instruction_condition == "failure" ~.4,
+                     study_instruction_condition == "view" ~.8)) %>%
+  filter(scene_component == "background")
+# Make the plots
+memory_measure <- "Corrected recognition" 
+sc_type        <- "Backgrounds"
+rain_bg        <- make_cloud_plot(df2_x_axis_bg, cr_df_background, 'corrected_recognition', memory_measure, plot_colors, x_break, x_label)
+
+rain_objects + rain_bg
+```
+# OSF Hypothesis #4 | Manuscript #1: Paired t-test (study instruction: reappraisal vs view) for negative scenes. 
+```{r}
+arousal_vars_remove <- c("success","failure","view_neutral")
+nd7_stat_h4         <- ndg_arousal_long %>%
+  filter(!study_condition %in% arousal_vars_remove)%>% 
+  droplevels()
+#run model
+nd7_aov_h4 <- aov_ez('participant','arousal_ratings',nd7_stat_h4,
+                     within=c("study_condition"),
+                     anova_table = list(es='pes'))
+knitr::kable(nice(nd7_aov_h4))
+
+nd7_h4             <- summary(pairs(emmeans(nd7_aov_h4, "study_condition")))
+pairs_es_h4        <- t_to_d(nd7_h4$t.ratio, nd7_h4$df, ci = .95)
+```
+# OSF Hypothesis #5 | Manuscript #2:  a one way repeated measures ANOVA with the factor of reappraisal success (success, failure, view). If there is a significant main effect it will be followed up with paired t-tests (success vs. failure, success vs. view, failure vs. view).  
+```{r}
+study_remove_vars <- c("decrease","view_neutral")
+
+nd7_stat_h5 <- ndg_arousal_long%>%
+  filter(!study_condition %in% study_remove_vars)%>% 
+  droplevels()
+#run model
+nd7_aov_h5 <- aov_ez('participant','arousal_ratings',nd7_stat_h5,
+                     within=c("study_condition"),
+                     anova_table = list(es = 'pes'))
+knitr::kable(nice(nd7_aov_h5))
+# Follow up t-tests
+nd7_h5             <- emmeans(nd7_aov_h5, "study_condition")
+pairs_h5           <- summary(pairs(nd7_h5, adjust = "none"))
+pairs_es_h5        <- t_to_d(pairs_h5$t.ratio, pairs_h5$df, ci = .95)
+```

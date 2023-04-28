@@ -31,7 +31,7 @@ else:
   
 #set up paths
 path = os.getcwd()
-os.chdir('C:/Users/nyeh/Desktop/fall_2021/NDG/exp1/data')
+os.chdir('C:/Users/nickw/Desktop/PHD/NDG/exp1/data')
 # Project ID and Experiment number
 project_id = 'NDG'
 experiment_id = 'exp1'
@@ -40,7 +40,7 @@ my_os = platform.system()
 # This is platform dependent and returns a Path class object
 # Get the server directory
 if my_os == 'Windows':
-    server_dir = Path('C:/Users/nyeh/Desktop/fall_2021')
+    server_dir = Path('C:/Users/nickw/Desktop/PHD')
     print(server_dir)
 else:
     print("You messed up!")
@@ -106,41 +106,41 @@ for sub in sub_list:
         print(f" test data for {sub} has correct rows")
     
     # compute hit rates as function of study instructions x  scene component x valence
-    old_beh = beh_data.loc[(beh_data['old_new'] == 'old') & (beh_data['old_new_resp'] == "old")]
+    old_beh               = beh_data.loc[(beh_data['old_new'] == 'old') & (beh_data['old_new_resp'] == "old")]
     hits_sc_valence_means = old_beh.groupby(['old_new','sc_type','sc_valence', 'scene_valence', 'instruction'])['old_new_resp'].value_counts()
     #old_beh = beh_data[beh_data['old_new']=='old']
     #old_beh = old_beh[old_beh['old_new_resp']=='old']
     #hits_sc_valence_means = old_beh.groupby(['old_new','sc_type','sc_valence', 'scene_valence', 'study_instruction'])['old_new_resp'].value_counts()
     # note there were only 60 reappraisal trials 
-    hit_decrease_object_negative  = hits_sc_valence_means[3]/60
+    hit_decrease_object_negative     = hits_sc_valence_means[3]/60
     hit_decrease_background_negative = hits_sc_valence_means[0]/60
-    hit_view_object_negative = hits_sc_valence_means[4]/60
-    hit_view_background_negative = hits_sc_valence_means[1]/60
-    hit_view_object_neutral = hits_sc_valence_means[5]/60
-    hit_view_background_neutral = hits_sc_valence_means[2]/60
+    hit_view_object_negative         = hits_sc_valence_means[4]/60
+    hit_view_background_negative     = hits_sc_valence_means[1]/60
+    hit_view_object_neutral          = hits_sc_valence_means[5]/60
+    hit_view_background_neutral      = hits_sc_valence_means[2]/60
     
-    total_success = beh_data['success_resp_keys'].value_counts()[1]/2
-    total_failure = 60 - total_success
-    old_reappraisal = beh_data.loc[(beh_data['old_new'] == 'old') & (beh_data['old_new_resp'] == "old") & (beh_data['instruction'] == "decrease") & (beh_data['scene_valence'] == "negative")]
-    hits_sc_valence_success_means = old_reappraisal.groupby(['old_new','sc_type','sc_valence', 'scene_valence', 'success_resp_keys'], as_index=False)['old_new_resp'].count()
+    total_success                    = beh_data['study_success_resp_key'].value_counts()[1]/2
+    total_failure                    = 60 - total_success
+    old_reappraisal                  = beh_data.loc[(beh_data['old_new'] == 'old') & (beh_data['old_new_resp'] == "old") & (beh_data['instruction'] == "decrease") & (beh_data['scene_valence'] == "negative")]
+    hits_sc_valence_success_means    = old_reappraisal.groupby(['old_new','sc_type','sc_valence', 'scene_valence', 'study_success_resp_key'], as_index=False)['old_new_resp'].count()
 
     #check for missing combinations of data
     #no hits for successful objects
-    option2a = beh_data.loc[(beh_data.success_resp_keys == 1) & (beh_data.old_new_resp == 'old') & (beh_data.sc_type == 'object')]['old_new_resp'].value_counts()
-    option2b = beh_data.loc[(beh_data.success_resp_keys == 1) & (beh_data.old_new_resp == 'old')] ['old_new_resp'].value_counts()
-    # no hits for faiolure backgrounds
+    option2a = beh_data.loc[(beh_data.study_success_resp_key == 1) & (beh_data.old_new_resp == 'old') & (beh_data.sc_type == 'object')]['old_new_resp'].value_counts()
+    option2b = beh_data.loc[(beh_data.study_success_resp_key == 1) & (beh_data.old_new_resp == 'old')] ['old_new_resp'].value_counts()
+    # no hits for failure backgrounds
     option3a = beh_data.loc[(beh_data.instruction == 'decrease') & (beh_data.old_new_resp == 'old') & (beh_data.sc_type == 'background')]['old_new_resp'].value_counts()
-    option3b = beh_data.loc[(beh_data.success_resp_keys == 1) & (beh_data.old_new_resp == 'old') & (beh_data.sc_type == 'background')]['old_new_resp'].value_counts()
+    option3b = beh_data.loc[(beh_data.study_success_resp_key == 1) & (beh_data.old_new_resp == 'old') & (beh_data.sc_type == 'background')]['old_new_resp'].value_counts()
     
     if len(hits_sc_valence_success_means.index) == 3 : 
          if option2a[0] == option2b[0] :
-            temp_success_bg = {"old_new" : "old", "sc_type" : "background", "sc_valence" : "neutral", "scene_valence" : "negative","success_resp_keys": 1, "old_new_resp": 0}  
+            temp_success_bg = {"old_new" : "old", "sc_type" : "background", "sc_valence" : "neutral", "scene_valence" : "negative","study_success_resp_key": 1, "old_new_resp": 0}  
             hits_sc_valence_success_means = hits_sc_valence_success_means.append(temp_success_bg,ignore_index=True)
             hits_sc_valence_success_means = hits_sc_valence_success_means.reindex([0,3,1,2])
             hits_sc_valence_success_means.reset_index(drop=True, inplace=True)
             
          elif option3a[0] == option3b[0] :
-            temp_success_bg = {"old_new" : "old", "sc_type" : "background", "sc_valence" : "neutral", "scene_valence" : "negative","success_resp_keys": 0, "old_new_resp": 0}  
+            temp_success_bg = {"old_new" : "old", "sc_type" : "background", "sc_valence" : "neutral", "scene_valence" : "negative","study_success_resp_key": 0, "old_new_resp": 0}  
             hits_sc_valence_success_means = hits_sc_valence_success_means.append(temp_success_bg,ignore_index=True)
             hits_sc_valence_success_means = hits_sc_valence_success_means.reindex([3,0,1,2])
             hits_sc_valence_success_means.reset_index(drop=True, inplace=True)
@@ -150,8 +150,8 @@ for sub in sub_list:
             
     elif len(hits_sc_valence_success_means.index) == 2 and  total_failure == 0:
         
-        temp_failure_bg = {"old_new" : "old", "sc_type" : "background", "sc_valence" : "neutral", "scene_valence" : "negative","success_resp_keys": float("NaN"), "old_new_resp": float("NaN")}
-        temp_failure_ob = {"old_new" : "old", "sc_type" : "object", "sc_valence" : "negative", "scene_valence" : "negative","success_resp_keys": float("NaN"), "old_new_resp": float("NaN")}
+        temp_failure_bg = {"old_new" : "old", "sc_type" : "background", "sc_valence" : "neutral", "scene_valence" : "negative","study_success_resp_key": float("NaN"), "old_new_resp": float("NaN")}
+        temp_failure_ob = {"old_new" : "old", "sc_type" : "object", "sc_valence" : "negative", "scene_valence" : "negative","study_success_resp_key": float("NaN"), "old_new_resp": float("NaN")}
         hits_sc_valence_success_means.loc[-1] = temp_failure_bg
         hits_sc_valence_success_means.index = hits_sc_valence_success_means.index + 1
         hits_sc_valence_success_means = hits_sc_valence_success_means.sort_index()   
@@ -164,39 +164,39 @@ for sub in sub_list:
         print("big problem")
     # Calculate hit rates (old response to old items) for success/failure objects and backgrounds 
     
-    hit_success_decrease_object_negative = hits_sc_valence_success_means['old_new_resp'][3]/total_success
+    hit_success_decrease_object_negative     = hits_sc_valence_success_means['old_new_resp'][3]/total_success
     hit_success_decrease_background_negative = hits_sc_valence_success_means['old_new_resp'][1]/total_success
-    hit_failure_decrease_object_negative = hits_sc_valence_success_means['old_new_resp'][2]/total_failure
+    hit_failure_decrease_object_negative     = hits_sc_valence_success_means['old_new_resp'][2]/total_failure
     hit_failure_decrease_background_negative = hits_sc_valence_success_means['old_new_resp'][0]/total_failure
     
     #Calculate False alarm rate (old response to new items)
-    new_beh = beh_data.loc[(beh_data['old_new'] == 'new') & (beh_data['old_new_resp'] == "old")]
-    FA_rates = new_beh.groupby(['old_new','sc_type','sc_valence'])['old_new_resp'].value_counts()
+    new_beh                = beh_data.loc[(beh_data['old_new'] == 'new') & (beh_data['old_new_resp'] == "old")]
+    FA_rates               = new_beh.groupby(['old_new','sc_type','sc_valence'])['old_new_resp'].value_counts()
 
-    FA_objects_negative = FA_rates[1]/60
-    FA_objects_neutral = FA_rates[2]/20
+    FA_objects_negative    = FA_rates[1]/60
+    FA_objects_neutral     = FA_rates[2]/20
     FA_backgrounds_neutral = FA_rates[0]/80
     
     # Calculate corrected hit rates (hit - false alarms)
     
     #decrease condition for negative objects/backgrounds
-    CR_decrease_object_negative = (hit_decrease_object_negative - FA_objects_negative)
-    CR_decrease_background_negative = (hit_decrease_background_negative - FA_backgrounds_neutral)
+    CR_decrease_object_negative             = (hit_decrease_object_negative - FA_objects_negative)
+    CR_decrease_background_negative         = (hit_decrease_background_negative - FA_backgrounds_neutral)
 
     # view condition for negative objects/backgrounds
-    CR_view_object_negative = (hit_view_object_negative - FA_objects_negative)
-    CR_view_background_negative = (hit_view_background_negative - FA_backgrounds_neutral)
+    CR_view_object_negative                 = (hit_view_object_negative - FA_objects_negative)
+    CR_view_background_negative             = (hit_view_background_negative - FA_backgrounds_neutral)
 
     # view condition for neutral object/backgrounds
-    CR_view_object_neutral = (hit_view_object_neutral - FA_objects_neutral )
-    CR_view_background_neutral = (hit_view_background_neutral - FA_backgrounds_neutral)
+    CR_view_object_neutral                  = (hit_view_object_neutral - FA_objects_neutral )
+    CR_view_background_neutral              = (hit_view_background_neutral - FA_backgrounds_neutral)
 
     # success condition for decrease object/backgrounds
-    CR_success_decrease_object_negative = (hit_success_decrease_object_negative - FA_objects_negative)
+    CR_success_decrease_object_negative     = (hit_success_decrease_object_negative - FA_objects_negative)
     CR_success_decrease_background_negative = (hit_success_decrease_background_negative - FA_backgrounds_neutral)
 
     # failure condition for decrease object/backgrounds
-    CR_failure_decrease_object_negative = (hit_failure_decrease_object_negative - FA_objects_negative)
+    CR_failure_decrease_object_negative     = (hit_failure_decrease_object_negative - FA_objects_negative)
     CR_failure_decrease_background_negative = (hit_failure_decrease_background_negative - FA_backgrounds_neutral)
     
     # Step 3
@@ -210,7 +210,7 @@ for sub in sub_list:
    
     for trial in numbers:
         
-        temp_index = alt_data.index[alt_data["sc_code"] == trial].tolist() #find scene (ob + bg)
+        temp_index = alt_data.index[alt_data["sc_code"] == str(trial)].tolist() #find scene (ob + bg)
         
         if alt_data['old_new_resp'][temp_index[0]] == 'old' and alt_data['old_new_resp'][temp_index[1]] == 'old':
             alt_data['Intact'][temp_index[0]] = 1
@@ -235,48 +235,49 @@ for sub in sub_list:
     alt_data = alt_data.drop_duplicates(subset='sc_code', keep="first")
     # clean up new measures by replacing NAN with 0
     
-    alt_data['Intact'] = alt_data['Intact'].fillna(0)
+    alt_data['Intact']       = alt_data['Intact'].fillna(0)
     alt_data['Rearrange_OB'] = alt_data['Rearrange_OB'].fillna(0)
     alt_data['Rearrange_BG'] = alt_data['Rearrange_BG'].fillna(0)
-    alt_data['Forget'] = alt_data['Forget'].fillna(0)
+    alt_data['Forget']       = alt_data['Forget'].fillna(0)
+    
     alt_data.loc[(alt_data['old_new'] == 'old') & (alt_data['study_success_rating'] == "na"),'study_success_rating']='view'
     
     # Handle when there are no reappraisal failures
     if total_failure == 0:
-        failure_OB = float("NaN")
+        failure_OB   = float("NaN")
         failure_OBBG = float("NaN")
-        failure_BG = float("NaN")
-        failure_F = float("NaN")
+        failure_BG   = float("NaN")
+        failure_F    = float("NaN")
     else:
-        failure_OB =  alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['study_success_rating'] == 'failure'), 'Rearrange_OB'].sum()/ alt_data['study_success_rating'].value_counts()[2]
-        failure_OBBG =  alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['study_success_rating'] == 'failure'), 'Intact'].sum() / alt_data['study_success_rating'].value_counts()[2]
-        failure_BG =  alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['study_success_rating'] == 'failure'), 'Rearrange_BG'].sum() / alt_data['study_success_rating'].value_counts()[2]
-        failure_F =  alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['study_success_rating'] == 'failure'), 'Forget'].sum() / alt_data['study_success_rating'].value_counts()[2]
+        failure_OB    =  alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['study_success_rating'] == 'failure'), 'Rearrange_OB'].sum()/ alt_data['study_success_rating'].value_counts()[2]
+        failure_OBBG  =  alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['study_success_rating'] == 'failure'), 'Intact'].sum() / alt_data['study_success_rating'].value_counts()[2]
+        failure_BG    =  alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['study_success_rating'] == 'failure'), 'Rearrange_BG'].sum() / alt_data['study_success_rating'].value_counts()[2]
+        failure_F     =  alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['study_success_rating'] == 'failure'), 'Forget'].sum() / alt_data['study_success_rating'].value_counts()[2]
 
     # Rearrange measure
-    decrease_negative_OB = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['instruction'] == 'decrease'), 'Rearrange_OB'].sum()/ 60    
-    success_OB = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['study_success_rating'] == 'success'), 'Rearrange_OB'].sum()/ alt_data['study_success_rating'].value_counts()[1]  
-    view_negative_OB =  alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['instruction'] == 'view'), 'Rearrange_OB'].sum()/ 60
-    view_neutral_OB = alt_data.loc[(alt_data['scene_valence'] == 'neutral') & (alt_data['instruction'] == 'view'), 'Rearrange_OB'].sum()/ 60
+    decrease_negative_OB   = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['instruction'] == 'decrease'), 'Rearrange_OB'].sum()/ 60    
+    success_OB             = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['study_success_rating'] == 'success'), 'Rearrange_OB'].sum()/ alt_data['study_success_rating'].value_counts()[1]  
+    view_negative_OB       = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['instruction'] == 'view'), 'Rearrange_OB'].sum()/ 60
+    view_neutral_OB        = alt_data.loc[(alt_data['scene_valence'] == 'neutral') & (alt_data['instruction'] == 'view'), 'Rearrange_OB'].sum()/ 60
     
      # INTACT measure
     decrease_negative_OBBG = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['instruction'] == 'decrease'), 'Intact'].sum() / 60 
-    success_OBBG = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['study_success_rating'] == 'success'), 'Intact'].sum()/ alt_data['study_success_rating'].value_counts()[1]
-    view_negative_OBBG =  alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['instruction'] == 'view'), 'Intact'].sum() / 60
-    view_neutral_OBBG = alt_data.loc[(alt_data['scene_valence'] == 'neutral') & (alt_data['instruction'] == 'view'), 'Intact'].sum() / 60
+    success_OBBG           = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['study_success_rating'] == 'success'), 'Intact'].sum()/ alt_data['study_success_rating'].value_counts()[1]
+    view_negative_OBBG     = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['instruction'] == 'view'), 'Intact'].sum() / 60
+    view_neutral_OBBG      = alt_data.loc[(alt_data['scene_valence'] == 'neutral') & (alt_data['instruction'] == 'view'), 'Intact'].sum() / 60
   
     #alt_counts_BG = alt_data.groupby(['scene_valence','study_success_rating'])['Rearrange_BG'].value_counts()
     
-    decrease_negative_BG = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['instruction'] == 'decrease'), 'Rearrange_BG'].sum() / 60
-    success_BG = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['study_success_rating'] == 'success'), 'Rearrange_BG'].sum() / alt_data['study_success_rating'].value_counts()[1]
-    view_negative_BG =  alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['instruction'] == 'view'), 'Rearrange_BG'].sum() / 60
-    view_neutral_BG = alt_data.loc[(alt_data['scene_valence'] == 'neutral') & (alt_data['instruction'] == 'view'), 'Rearrange_BG'].sum() / 60
+    decrease_negative_BG   = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['instruction'] == 'decrease'), 'Rearrange_BG'].sum() / 60
+    success_BG             = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['study_success_rating'] == 'success'), 'Rearrange_BG'].sum() / alt_data['study_success_rating'].value_counts()[1]
+    view_negative_BG       = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['instruction'] == 'view'), 'Rearrange_BG'].sum() / 60
+    view_neutral_BG        = alt_data.loc[(alt_data['scene_valence'] == 'neutral') & (alt_data['instruction'] == 'view'), 'Rearrange_BG'].sum() / 60
     
     #Forgot measure
-    decrease_negative_F = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['instruction'] == 'decrease'), 'Forget'].sum() / 60
-    success_F = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['study_success_rating'] == 'success'), 'Forget'].sum() / alt_data['study_success_rating'].value_counts()[1]
-    view_negative_F =  alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['instruction'] == 'view'), 'Forget'].sum() / 60
-    view_neutral_F = alt_data.loc[(alt_data['scene_valence'] == 'neutral') & (alt_data['instruction'] == 'view'), 'Forget'].sum() / 60
+    decrease_negative_F    = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['instruction'] == 'decrease'), 'Forget'].sum() / 60
+    success_F              = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['study_success_rating'] == 'success'), 'Forget'].sum() / alt_data['study_success_rating'].value_counts()[1]
+    view_negative_F        = alt_data.loc[(alt_data['scene_valence'] == 'negative') & (alt_data['instruction'] == 'view'), 'Forget'].sum() / 60
+    view_neutral_F         = alt_data.loc[(alt_data['scene_valence'] == 'neutral') & (alt_data['instruction'] == 'view'), 'Forget'].sum() / 60
 
     # alt_data.loc[(alt_data['old_new'] == 'old') & (alt_data['study_success_resp'] == "na"),'study_success_resp']='view'
 
@@ -289,7 +290,6 @@ for sub in sub_list:
     print(sub)
     
     # Step 5 update dataframes with new measures
-    
     # wide 
     
     hit_list_temp = [{
@@ -356,7 +356,8 @@ for sub in sub_list:
     "failure_neg_forget"          : failure_F
     }]
     tradeoff_temp = pd.DataFrame(tradeoff_temp)
-    # long for graphs
+    
+    #Store data
     
     # hit rates
     hit_list           = pd.concat([hit_list, hit_list_temp])
@@ -369,6 +370,7 @@ for sub in sub_list:
     hit_long_melted_df                    = hit_result.melt(id_vars = ['id','cb','list'], col_level = 0, value_name = 'hit_rate', var_name = 'study_condition')
     hit_long_melted_df['scene_component'] = hit_result.melt(id_vars = ['id','cb','list'], col_level = 1)['variable']
     hit_long_melted_df['valence']         = hit_result.melt(id_vars = ['id','cb','list'], col_level = 2)['variable']
+    
     hit_long_melted_df.sort_values('id', inplace=True)
     #combine dataframes
     memory_melt = pd.concat([memory_melt, hit_long_melted_df])
@@ -390,7 +392,7 @@ for sub in sub_list:
     
     # Trade-off
     to_list     = to_list.append(tradeoff_temp, ignore_index=True) 
-    to_list_df  = to_list
+    to_list_df  = tradeoff_temp
 
     intact  = pd.melt(to_list_df, id_vars = ['participant','study_cb','list'], value_vars = ["dec_neg_intact", "view_neg_intact", "view_neutral_intact", "success_neg_intact", "failure_neg_intact"], var_name = "study_condition", value_name = "intact")
     emto    = pd.melt(to_list_df, id_vars = ['participant','study_cb','list'], value_vars = ["dec_neg_emto", "view_neg_emto", "view_neutral_emto", "success_neg_emto", "failure_neg_emto"], var_name = "study_condition", value_name = "emto")
@@ -408,25 +410,20 @@ for sub in sub_list:
     
     combined_alt = pd.concat([combined_alt,results_to])
     combined_alt.sort_values('participant', inplace=True)
+    
     # Step 6 save csv files
- 
-lme_data_file = analyses_dir / 'lme_data.csv'
-lme_test_data.to_csv(lme_data_file, index=False)
-
-hit_list_data_file = analyses_dir / 'hit_fa_data.csv'
-hit_list.to_csv(hit_list_data_file, index=False)
-
-hit_long_data_file = analyses_dir / 'hit_fa_data_longgraphs.csv'
-hit_long_melted_df.to_csv(hit_long_data_file, index=False)   
-
-cr_list_data_file = analyses_dir / 'memory_measures_data.csv'
-cr_list.to_csv(cr_list_data_file, index=False)
-
+lme_data_file          = analyses_dir / 'lme_data.csv'
+hit_list_data_file     = analyses_dir / 'hit_fa_data.csv'
+hit_long_data_file     = analyses_dir / 'hit_fa_data_longgraphs.csv'
+cr_list_data_file      = analyses_dir / 'memory_measures_data.csv'
 cr_list_melt_data_file = analyses_dir / 'memory_measures_data_longgraphs.csv'
-cr_list_melted_df.to_csv(cr_list_melt_data_file, index=False)
-
-to_list_data_file = analyses_dir / 'tradeoff_data.csv'
-to_list.to_csv(to_list_data_file, index=False)
-
+to_list_data_file      = analyses_dir / 'tradeoff_data.csv'
 combined_alt_data_file = analyses_dir / 'tradeoff_data_longgraphs.csv'
+
+lme_test_data.to_csv(lme_data_file, index=False)
+hit_list.to_csv(hit_list_data_file, index=False)
+hit_long_melted_df.to_csv(hit_long_data_file, index=False)   
+cr_list.to_csv(cr_list_data_file, index=False)
+cr_list_melted_df.to_csv(cr_list_melt_data_file, index=False)
+to_list.to_csv(to_list_data_file, index=False)
 combined_alt.to_csv(combined_alt_data_file, index=False)

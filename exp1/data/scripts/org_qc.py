@@ -22,7 +22,7 @@ else:
   
 #set up paths
 path = os.getcwd()
-os.chdir('C:/Users/nyeh/Desktop/fall_2021/NDG/exp1/data')
+os.chdir('C:/Users/nickw/Desktop/PHD/NDG/exp1/data')
 # Project ID and Experiment number
 project_id = 'NDG'
 experiment_id = 'exp1'
@@ -31,7 +31,7 @@ my_os = platform.system()
   # This is platform dependent and returns a Path class object
   # Get the server directory
 if my_os == 'Windows':
-    server_dir = Path('C:/Users/nyeh/Desktop/fall_2021')
+    server_dir = Path('C:/Users/nickw/Desktop/PHD')
     print(server_dir)
 else:
     print("You messed up!")
@@ -64,7 +64,6 @@ par_log = pd.DataFrame(columns = par_col_names)
 sub_list= os.listdir(source_dir)
 
 # loop through participants
-
 for idx, sub in enumerate(sub_list):
     # set up ids
     id = str(idx+1)
@@ -74,19 +73,19 @@ for idx, sub in enumerate(sub_list):
     #Load the study behavioral data file
     study_file = source_dir / sub / f'data_PARTICIPANT_study_procedure_{sub}.csv'
     study_data = pd.read_csv(study_file, )
-    vars_to_remove = ['instruction_image_resp_keys', 'instruction_image_resp_rt',
-           'confirm_image_resp_keys', 'confirm_image_resp_rt',
-           'feedback_key_resp_keys', 'feedback_key_resp_rt',
-           'confirm_outer_loop_thisRepN', 'confirm_outer_loop_thisTrialN',
-           'confirm_outer_loop_thisN', 'confirm_outer_loop_thisIndex',
-           'confirm_outer_loop_ran', 'confirm_outer_loop_order',
-           'confirm_inner_loop_thisRepN', 'confirm_inner_loop_thisTrialN',
-           'confirm_inner_loop_thisN', 'confirm_inner_loop_thisIndex',
-           'confirm_inner_loop_ran', 'confirm_inner_loop_order',
+    vars_to_remove = ['instruction_image_resp.keys', 'instruction_image_resp.rt',
+           'confirm_image_resp.keys', 'confirm_image_resp.rt',
+           'feedback_key_resp.keys', 'feedback_key_resp.rt',
+           'confirm_outer_loop.thisRepN', 'confirm_outer_loop.thisTrialN',
+           'confirm_outer_loop.thisN', 'confirm_outer_loop.thisIndex',
+           'confirm_outer_loop.ran', 'confirm_outer_loop.order',
+           'confirm_inner_loop.thisRepN', 'confirm_inner_loop.thisTrialN',
+           'confirm_inner_loop.thisN', 'confirm_inner_loop.thisIndex',
+           'confirm_inner_loop.ran', 'confirm_inner_loop.order',
            'confirm_questions', 'correct_answer', 'expName',
-           'psychopyVersion', 'OS', 'frameRate', 'phases_thisRepN', 'phases_thisTrialN', 'phases_thisN',
-           'phases_thisIndex', 'phases_ran', 'phases_order', 'trials_thisRepN', 'trials_thisTrialN',
-           'trials_thisN', 'trials_thisIndex', 'trials_ran', 'trials_order',]
+           'psychopyVersion', 'OS', 'frameRate', 'phases.thisRepN', 'phases.thisTrialN', 'phases.thisN',
+           'phases.thisIndex', 'phases.ran', 'phases.order', 'trials.thisRepN', 'trials.thisTrialN',
+           'trials.thisN', 'trials.thisIndex', 'trials.ran', 'trials.order']
     
     study_data.drop(vars_to_remove, axis = 1, inplace=True) # remove columns
     study_data = study_data[study_data['phase_name'].notnull()] #remove rows with NA values from pysychopy setup
@@ -165,16 +164,20 @@ for idx, sub in enumerate(sub_list):
     
     # Combine study and test data
 
-    study_cols = ["sc_code","study_arousal_rating","study_arousal_rt","study_success_rating","study_success_rt","test_file","instruction","success_resp_keys"]
+    study_cols = ["sc_code","study_arousal_rating","study_arousal_rt","study_success_rating","study_success_rt","test_file","instruction","study_success_resp_key"]
     temp_study = study_data.loc[:, study_data.columns.isin(study_cols)]
+    temp_study['sc_code'] = temp_study['sc_code'].astype(int)
+    temp_study['sc_code'] = temp_study['sc_code'].astype(str)
     temp_study.sort_values(['sc_code'], ascending = [True], inplace =True)
     test_data.sort_values(['old_new', 'sc_code'], ascending=[False, True],inplace= True)
+    
     combo_data = pd.merge(test_data, temp_study, how="left")
     # likely could have merged them based on left with a key see below
-    #temp_study2 = temp_study.sort_values(['sc_code'], ascending = [False]) mess with sorting to check
-    #temp_test = test_data.sort_values(['old_new', 'sc_code'], ascending=[True, True]) mess with sorting to check
-    #combo2 = pd.merge(temp_test,temp_study2,how= "left" ,on = [ 'sc_code']) 
-    
+    #temp_study2 = temp_study.sort_values(['sc_code'], ascending = [False]) #mess with sorting to check
+    #temp_test = test_data.sort_values(['old_new', 'sc_code'], ascending=[True, True])# mess with sorting to check
+    #combo2 = pd.concat(temp_test,temp_study2,how= "left" ,on = [ 'sc_code']) 
+    #combo2 = pd.concat(temp_test,temp_study2) 
+
     # # Make directory
     sub_raw = raw_dir / f'sub-{id}'
     sub_raw.mkdir(parents=True, exist_ok=True)
